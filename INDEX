@@ -1,0 +1,22 @@
+gsMMD			Gene selection based on a mixture of marginal 
+			distributions. Input is an eSet. The function will 
+			obtain initial gene cluster memebership by its own.
+gsMMD.default		Gene selection based on a mixture of marginal 
+			distributions. Input is a data matrix. The function 
+			will obtain initial gene cluster memebership 
+			by its own.
+gsMMD2			Gene selection based on a mixture of marginal 
+			distributions. Input is an eSet. The user needs to
+			input initial gene cluster memebership.
+gsMMD2.default		Gene selection based on a mixture of marginal 
+			distributions. Input is a data matrix. The user 
+			needs to input initial gene cluster memebership.
+errRates		Calculating FDR, FNDR, FPR, and FNR for a real 
+			microarray data set based on the mixture of
+			marginal distributions.
+plotHistDensity		Plot of histogram of pooled gene expression levels,
+			composited with density estimate based on the
+			mixture of marginal distributions. The density
+			estimate is based on the assumption that the 
+			marginal correlations between subjects
+			are zero.

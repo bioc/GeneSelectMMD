@@ -1,0 +1,622 @@
+%\VignetteIndexEntry{Gene Selection based on a mixture of marginal distributions}
+%\VignetteDepends{GeneSelectMMD}
+%\VignetteKeywords{Microarray experiment}
+%\VignettePackage{GeneSelectMMD}
+
+\documentclass[10pt]{article}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{natbib}
+%\usepackage{isorot}
+\usepackage{fullpage} % standard 1 inch margins 
+
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+\newcommand{\Rmethod}[1]{{\textit{#1}}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\email}[1]{\texttt{#1}}
+
+
+\newcommand{\mb}[1]{{\boldsymbol{#1}}}
+\newcommand\myC[1]{{\cal #1}\,}
+\def\lnit{{\rm lnit}\,}
+\def\ln{{\rm ln}\,}
+\def\N{{\rm N}\,}
+\def\E{{\rm E}\,}
+\def\vec{{\rm vec}\,}
+\def\vech{{\rm vech}\,}
+\def\Var{{\rm Var}\,}
+\def\Cov{{\rm Cov}\,}
+\def\wCov{\widehat{\rm Cov}\,}
+\def\Q{\mb{Q}}
+\def\I{\mb{I}}
+\def\V{\mb{V}}
+\def\B{\mb{B}}
+\def\D{\mb{D}}
+\def\C{\mb{C}}
+\def\W{\mb{W}}
+\def\A{\mb{A}}
+\def\H{\mb{H}}
+\def\Y{{\bf Y}}
+\def\y{{\bf y}}
+\def\Z{\mb{Z}}
+\def\thbf{\mb{\theta}}
+\def\mbS{\mb{\Sigma}}
+\def\mbmu{\mb{\mu}}
+\def\mbI{\mb{I}}
+\def\hmbS{\hat{\mb{\Sigma}}}
+\def\mbT{\mb{\Theta}}
+\def\hmbT{\hat{\mb{\Theta}}}
+\def\mbw{\mb{w}}
+\newcommand{\oo}{\infty}
+\def\diam{\,{\rm diam}\,}
+\def\chs{\,{\rm chs}\,}
+\def\join{\,{\rm join}\,}
+\def\x{{\bf x}}
+\def\X{{\bf X}}
+\def\mbx{{\bf x}}
+\def\mbX{{\bf X}}
+\def\diag{{\rm diag}}
+
+
+
+
+
+%%% Hyperlinks for ``PDF Latex'' :
+\ifx\pdfoutput\undefined%%--- usual ``latex'' :
+  %% Stuff w/out hyperref
+\else%%---------------------- `` pdflatex '' : -- still gives funny errors
+  \RequirePackage{hyperref}
+  %% The following is R's share/texmf/hyperref.cfg :
+  %% Stuff __with__ hyperref :
+  \hypersetup{%
+    %default: hyperindex,%
+    colorlinks,%
+    %default: pagebackref,%
+    linktocpage,%
+    %%plainpages=false,%
+    linkcolor=Green,%
+    citecolor=Blue,%
+    urlcolor=Red,%
+    pdfstartview=Fit,%
+    pdfview={XYZ null null null}%
+    }
+  \RequirePackage{color}
+  \definecolor{Blue}{rgb}{0,0,0.8}
+  \definecolor{Green}{rgb}{0.1,0.75,0.1}
+  \definecolor{Red}{rgb}{0.7,0,0}
+  %% ESS JCGS v2 :
+  %%\hypersetup{backref,colorlinks=true,pagebackref=true,hyperindex=true}
+  %%\hypersetup{backref,colorlinks=false,pagebackref=true,hyperindex=true}
+\fi
+
+
+\usepackage{Sweave}
+\begin{document}
+
+\title{Gene Selection Using \Rpackage{GeneSelectMMD}}
+\author{
+        Weilianq Qiu\\
+        \email{stwxq@channing.harvard.edu},
+        \\
+        Wenqing He\\
+        \email{whe@stats.uwo.ca},
+        \\
+        Xiaogang Wang\\
+        \email{stevenw@mathstat.yorku.ca},
+        \\
+        Ross Lazarus\\
+        \email{ross.lazarus@channing.harvard.edu},
+        }       
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+
+This document demonstrates how to use the \Rpackage{GeneSelectMMD}
+ package to detect significant genes and to 
+estimate
+false discovery rate (FDR), false non-discovery rate (FNDR),
+false positive rate (FPR), and false negative rate (FNR),
+for a real microarray data set based
+on the method proposed by Qiu et al. (2008).\nocite{QiuEtAl:2008}
+It also illustrates how to visualize the fit of the model proposed in
+Qiu et al. (2008)
+to the real microarray data set when the marginal correlations among subjects
+are zero or close to zero.
+
+The \Rpackage{GeneSelectMMD} package is suitable for the case where
+there are only two tissue types and for the case where 
+tissue samples within a tissue type are conditionally independent given
+the gene (c.f. Qiu et al., 2008). 
+
+%\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methods}
+
+MMD assumes that the marginal distribution of a gene profile is a
+mixture of 3-component multivariate normal distributions with
+special structure for mean vectors and covariance matrices. 
+The 3
+component distributions correspond to 3 gene clusters: (1) cluster
+of genes over-expressed in the treatment group; (2) cluster of genes
+non-differentially expressed; and (3) cluster of genes
+under-expressed in the treatment group. 
+Specifically, the marginal density of a gene profile is assumed to be
+\begin{equation}\label{Model: mixture of 3-multivariate Normal}
+\begin{aligned}
+&f(\mb{x}|\thbf_1, \thbf_2, \thbf_3)=\pi_1 f_1(\mb{x}|\thbf_1)+\pi_2 f_2(\mb{x}|\thbf_2)+ \pi_3
+f_3(\mb{x}|\thbf_3),\\
+&\pi_1+\pi_2+\pi_3=1, \pi_i>0, i=1, 2, 3,
+\end{aligned}
+\end{equation}
+where $\pi_1$, $\pi_2$, $\pi_3$ are mixture proportions. The $m\times 1$
+vector $\mb{x}$ is a realization of the random vector
+$\mb{X}$ that represents the transformed gene profile for a randomly
+selected gene over $m$ tissue samples ($m=m_c+m_n$, where
+$m_c$ is the number of abnormal tissue samples and $m_n$ normal
+tissue samples);
+$\thbf_k$,
+is the parameter set for the $k$-th component distribution $f_k$,
+$k=1, 2, 3$; and $f_1$, $f_2$, and $f_3$ are the density functions for
+multivariate Normal distributions with the mean vectors
+\begin{equation}\label{Formulae: mean vector structure}
+\mb{\mu}_1=\left(\begin{array}{c}
+\mu_{c1}\mb{1}_{m_c}\\
+\mu_{n1}\mb{1}_{m_n}
+\end{array}\right),\quad
+\mb{\mu}_2=\mu_2\mb{1}_{m},\quad
+\mb{\mu}_3=\left(\begin{array}{c}
+\mu_{c3}\mb{1}_{m_c}\\
+\mu_{n3}\mb{1}_{m_n}
+\end{array}\right).
+\end{equation}
+and covariance matrices
+\begin{equation}\label{Formulae: covariance matrix structure}
+\mb{\Sigma}_1=\left(
+\begin{array}{cc}
+\sigma^2_{c_1}\mb{R}_{c_1}&\mb{0}\\
+\mb{0}& \sigma^2_{n_1}\mb{R}_{n_1}
+\end{array}
+\right),\quad
+\mb{\Sigma}_2=\sigma_2^2\mb{R}_{2},\quad
+\mb{\Sigma}_3=\left(
+\begin{array}{cc}
+\sigma^2_{c_3}\mb{R}_{c_3}&\mb{0}\\
+\mb{0}& \sigma^2_{n_3}\mb{R}_{n_3}
+\end{array}
+\right),
+\end{equation}
+respectively, where correlation matrix
+\begin{equation}\label{Formula: Rt}
+\mb{R}_{t}=(1-\rho_{t})\left[\mb{I}_{n_t}+\frac{\rho_{t}}{(1-\rho_{t})}\mb{1}_{n_t}\mb{1}_{n_t}^T\right],
+\end{equation}
+$t=c_1$, $n_1$, $2$, $c_3$, or $n_3$. $n_t=m_c$ if $t=c_1$ or $c_3$;
+$n_t=m$ if $t=2$; $n_t=m_n$ if $t=n_1$, or $n_3$. Here we assume,
+without loss of generality, that the first $m_c$ elements of the random
+vector $\X$ are for the abnormal tissue samples and the remaining
+$m_n$ elements are for the normal tissue samples. Let
+$\thbf_1=(\mu_{c_1}, \sigma^2_{c_1}, \rho_{c_1}, \mu_{n_1},
+\sigma^2_{n_1}, \rho_{n_1})^T$, $\thbf_2=(\mu_2, \sigma^2_2,
+\rho_{2})^T$, $\thbf_3=(\mu_{c_3}, \sigma^2_{c_3}, \rho_{c_3},
+\mu_{n_3}, \sigma^2_{n_3}, \rho_{n_3})^T$. Note that
+$\mu_{c_1}>\mu_{n_1}$ for component $1$ in which genes are
+overexpressed in abnormal tissue samples, and $\mu_{c_3}<\mu_{n_3}$
+for component 3 where genes are underexpressed in abnormal samples.
+Our prior belief is that the majority of genes are usually
+non-differentially expressed,
+so we assume $\pi_2>\pi_1$ and $\pi_2>\pi_3$.
+
+
+
+The model parameters can be estimated using the EM
+algorithm (Dempster et al., 1977).\nocite{DempsterEtAl:1977}
+
+The cluster membership of a
+gene is determined by the posterior probability that the gene
+belongs to a cluster given its gene profile. The posterior probability
+is a function of the 3 component marginal density functions and the
+mixing proportions: 
+\begin{equation}
+\begin{aligned}
+Pr(\mbox{gene $i \in$  cluster $k$}|\mb{x}_i)=&\frac{\pi_k
+f_k(\mb{x}_i|\thbf_k)}{\pi_1 f_1(\mb{x}_i|\thbf_1) +\pi_2
+f_2(\mb{x}_i|\thbf_2)+\pi_3 f_3(\mb{x}_i|\thbf_3)},\\ k=&1, 2, 3,
+\end{aligned}
+\end{equation}
+Specifically, a gene is assigned to the a gene 
+cluster if the
+posterior probability that the gene belongs to that gene
+cluster given its gene profile is larger than the posterior probability that
+the gene belongs to other gene clusters
+given its gene profile:
+\begin{equation}\label{Formula: criterion for gene selection}
+k_0=\arg\max_{k=1,2,3}Pr(\mbox{gene $i \in C_k$}|\mb{x}_i).
+\end{equation}
+
+
+An important task is to assess the performance of a gene selection method
+so that different methods can be objectively compared.
+To evaluate the performance of a gene selection method,
+investigators usually compare the error rates, such as FDR, FNDR,
+FPR, and FNR, via simulation studies. However, when analyzing a real
+microarray data set, investigators are more interested in what the
+values of FDR, FNDR, FPR, and FNR are for this specific real
+microarray set. It is challenging to estimate FDR, FNDR, FPR, and
+FNR for real microarray data sets since the true gene cluster
+membership is unknown for real data sets. However, model-based gene
+clustering methods, such as Bayesian hierarchical models and MMD,
+can provide such estimates since these error rates can be
+expressed as functions of marginal density functions and mixing
+proportions, where the model parameters and mixing proportions can
+be estimated from the real microarray data.
+It is easy to use MMD to estimate the four error rates
+since MMD describes the distributions of gene expression levels directly
+via the marginal distributions, while it is usually difficult to
+derive the marginal density functions for Bayesian hierarchical
+models.
+
+It is of practical importance to evaluate if a model fits a
+real microarray data
+set well. If a model does not fit well for the real
+microarray data set, then it makes no sense to estimate the error
+rates based on the model. Although it is quite challenging to asses
+the goodness of fit for multivariate data, especially for non-normal
+multivariate data, it is possible to do so for some special cases.
+For example, when tissue samples are marginally independent, we
+could pool the gene expression levels across tissue samples for each
+type of tissue samples since they are all independent. We then could
+impose the theoretical density curve on the histogram of the pooled
+expression levels for each type of tissue samples. The parameters $\rho_{c1}$,
+$\rho_{n1}$, $\rho_{2}$, $\rho_{c3}$, and $\rho_{n3}$
+indicates the marginal correlations among tissue samples. Assuming
+that the marginal correlations are ignorable, we
+then could produce such a plot to evaluate the goodness of fit of
+MMD to the real microarray data set.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Gene selection via \Rpackage{GeneSelectMMD}}
+\label{Section: Gene Selection Functions}
+
+The \Rpackage{GeneSelectMMD} includes four functions for gene selection:
+\code{gsMMD}, \code{gsMMD.default}, \code{gsMMD2}, and \code{gsMMD2.default}.
+
+The functions \code{gsMMD} and \code{gsMMD2} accept the object derived from the class of \Rpackage{Bioconductor}'s
+\code{ExpressionSet} as data input, while the functions \code{gsMMD.default}
+and \code{gsMMD2.default} accept data matrix as data input.
+
+The functions \code{gsMMD} and \code{gsMMD.default} will provide
+initial 3-cluster gene partitions (cluster of genes over-expressed in 
+treatment group, cluster of genes non-differentially expressed, and 
+cluster of genes under-expressed in treatment group) based on the 
+gene-wise two-sample t-test or two-sample Wilcoxon 
+rank-sum test.
+In situations where the user would like to provide the initial 3-cluster
+partition other than that provided by the gene-wise two-sample t-test or 
+two sample Wilcoxon rank-sum test, 
+the functions \code{gsMMD2} and \code{gsMMD2.default} could be used. 
+
+The rows of the input data matrix (or the data matrix derived from the object derived from the class \code{ExpressionSet}) 
+are genes, while the columns are tissue samples. The tissue type of a tissue
+sample is indicated by the argument \code{memSubjects}, which is
+a $m\times 1$ vector, $m=m_{c}+m_{n}$, $m_{c}$ is the number of
+tissue samples in the treatment group, and $m_{n}$ is the number of
+tissue samples in the control group. \code{memSubjects[j]=1} indicates
+the $j$-th tissue sample is from the treatment group. 
+\code{memSubjects[j]=0} indicates the $j$-th tissue sample is from
+the control group.
+
+The output of gene selection functions include \code{dat}, \code{memGenes},
+\code{memGenes2}, and \code{para}. 
+\begin{itemize}
+
+  \item \code{dat} is a data matrix with
+the same dimensions as the input data matrix. If no data transformation
+is performed, \code{dat} is the same as the input data matrix. Otherwise,
+it will be the transformed input data matrix. 
+
+  \item \code{memGenes} is a 
+$G\times 1$ vector indicating the gene cluster membership, where $G$ is
+the number of genes (i.e., the number of rows of the input data matrix).
+\code{memGenes[g]=1} indicates the $g$-th gene is assigned to the cluster
+of genes over-expressed in treatment group; 
+\code{memGenes[g]=2} indicates the $g$-th gene is assigned to the cluster
+of genes non-differentially-expressed; 
+\code{memGenes[g]=3} indicates the $g$-th gene is assigned to the cluster
+of genes under-expressed in treatment group. 
+
+  \item \code{memGenes2} is a variant of \code{memGenes}. 
+\code{memGenes2[g]=1} means the $g$-th gene is differentially expressed, 
+while 
+\code{memGenes2[g]=0} means the $g$-th gene is non-differentially expressed,
+$g=1,\ldots, G$. 
+
+  \item \code{para} is a $18\times 1$ vector of parameters 
+$(\pi_1$, $\pi_2$, $\pi_3$, 
+$\mu_{c1}$, $\sigma^2_{c1}$,
+$\rho_{c1}$, $\mu_{n1}$, $\sigma^2_{n1}$, $\rho_{n1}$,
+$\mu_2$, $\sigma^2_2$, $\rho_2$,
+$\mu_{c3}$, $\sigma^2_{c3}$,
+$\rho_{c3}$, $\mu_{n3}$, $\sigma^2_{n3}$, $\rho_{n3}$,
+$)$ for the model
+described in Equations (\ref{Model: mixture of 3-multivariate Normal})-
+(\ref{Formula: Rt}), which can be estimated by
+the EM algorithm.
+\code{para[1]}, \code{para[2]}, and \code{para[3]} are the cluster proportions
+for the 3 gene clusters (over-expressed, non-differentially expressed, and
+under-expressed).
+\code{para[4]}, \code{para[5]}, and \code{para[6]} are 
+the marginal mean, variance, and correlation of gene expression levels 
+of cluster 1 (up-regulated genes) for diseased subjects; 
+\code{para[7]}, \code{para[8]}, and \code{para[9]} are 
+the marginal mean, variance, and correlation of gene expression levels 
+of cluster 1 (up-regulated genes) for non-diseased subjects; 
+\code{para[10]}, \code{para[11]}, and \code{para[12]} 
+are the marginal mean, 
+variance, and correlation of gene 
+expression levels of cluster 2 (non-differentially expressed genes); 
+\code{para[13]}, \code{para[14]}, and \code{para[15]} are 
+the marginal mean, variance, and correlation of gene expression levels 
+of cluster 3 (up-regulated genes) for diseased subjects; 
+\code{para[16]}, \code{para[17]}, and \code{para[18]} are 
+the marginal mean, variance, and correlation of gene expression levels 
+of cluster 3 (up-regulated genes) for non-diseased subjects. 
+
+Note that genes in cluster 2 are non-differentially expressed across
+abnormal and normal tissue samples. Hence there are only 3 parameters for
+cluster 2.
+\end{itemize}
+
+For example, to obtain differentially expressed genes for the ALL data 
+(Chiaretti et al., 2004),\nocite{ChiarettiEtAl:2004} we can run either
+<<echo=TRUE, eval=TRUE,print=FALSE>>=
+  library(GeneSelectMMD)
+  library(ALL)
+  data(ALL)
+  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+  
+  mem.str <- as.character(eSet1$BT)
+  nSubjects <- length(mem.str)
+  memSubjects <- rep(0,nSubjects)
+  # B3 coded as 0, T2 coded as 1
+  memSubjects[mem.str == "T2"] <- 1
+  
+  obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
+    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+  para <- obj.gsMMD$para
+  print(round(para, 3))
+
+@
+or
+<<echo=TRUE, eval=TRUE,print=FALSE>>=
+  library(GeneSelectMMD)
+  library(ALL)
+  data(ALL)
+  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+  mat <- exprs(eSet1)
+  
+  mem.str <- as.character(eSet1$BT)
+  nSubjects <- length(mem.str)
+  memSubjects <- rep(0,nSubjects)
+  # B3 coded as 0, T2 coded as 1
+  memSubjects[mem.str == "T2"] <- 1
+ 
+  obj.gsMMD <- gsMMD.default(mat, memSubjects, iniGeneMethod = "Ttest",
+          transformFlag = TRUE, transformMethod = "boxcox", scaleFlag = TRUE)
+  para <- obj.gsMMD$para
+  print(round(para, 3))
+
+@
+
+If we would like to provide the initial 3-cluster partition via the
+two sample Wilcoxon rank-sum test, then
+we can run either
+<<echo=TRUE, eval=TRUE,print=FALSE>>=
+  library(GeneSelectMMD)
+  library(ALL)
+  data(ALL)
+  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+  
+  mem.str <- as.character(eSet1$BT)
+  nSubjects <- length(mem.str)
+  memSubjects <- rep(0,nSubjects)
+  # B3 coded as 0, T2 coded as 1
+  memSubjects[mem.str == "T2"] <- 1
+  
+  myWilcox <-
+  function(x, memSubjects, alpha = 0.05)
+  {
+    xc <- x[memSubjects == 1]
+    xn <- x[memSubjects == 0]
+  
+    m <- sum(memSubjects == 1)
+    res <- wilcox.test(x = xc, y = xn, conf.level = 1 - alpha)
+    res2 <- c(res$p.value, res$statistic - m * (m + 1) / 2)
+    names(res2) <- c("p.value", "statistic")
+  
+    return(res2)
+  }
+  
+  mat <- exprs(eSet1)
+  tmp <- t(apply(mat, 1, myWilcox, memSubjects = memSubjects))
+  colnames(tmp) <- c("p.value", "statistic")
+  memIni <- rep(2, nrow(mat))
+  memIni[tmp[, 1] < 0.05 & tmp[, 2] > 0] <- 1
+  memIni[tmp[, 1] < 0.05 & tmp[, 2] < 0] <- 3
+  
+  print(table(memIni))
+
+  obj.gsMMD <- gsMMD2(eSet1, memSubjects, memIni, transformFlag = TRUE, 
+       transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+  para <- obj.gsMMD$para
+  print(round(para, 3))
+
+@
+or
+<<echo=TRUE, eval=TRUE,print=FALSE>>=
+  library(GeneSelectMMD)
+  library(ALL)
+  data(ALL)
+  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+  mat <- exprs(eSet1)
+  
+  mem.str <- as.character(eSet1$BT)
+  nSubjects <- length(mem.str)
+  memSubjects <- rep(0,nSubjects)
+  # B3 coded as 0, T2 coded as 1
+  memSubjects[mem.str == "T2"] <- 1
+ 
+  myWilcox <-
+  function(x, memSubjects, alpha = 0.05)
+  {
+    xc <- x[memSubjects == 1]
+    xn <- x[memSubjects == 0]
+  
+    m <- sum(memSubjects == 1)
+    res <- wilcox.test(x = xc, y = xn, conf.level = 1 - alpha)
+    res2 <- c(res$p.value, res$statistic - m * (m + 1) / 2)
+    names(res2) <- c("p.value", "statistic")
+  
+    return(res2)
+  }
+  
+  tmp <- t(apply(mat, 1, myWilcox, memSubjects = memSubjects))
+  colnames(tmp) <- c("p.value", "statistic")
+  memIni <- rep(2, nrow(mat))
+  memIni[tmp[, 1] < 0.05 & tmp[, 2] > 0] <- 1
+  memIni[tmp[, 1] < 0.05 & tmp[, 2] < 0] <- 3
+  
+  print(table(memIni))
+  
+  obj.gsMMD <- gsMMD2.default(mat, memSubjects, memIni = memIni,
+          transformFlag = TRUE, transformMethod = "boxcox", scaleFlag = TRUE)
+  para <- obj.gsMMD$para
+  print(round(para, 3))
+
+
+@
+
+Actually, the two sample Wilcoxon rank-sum test is implemented in the 
+\Rpackage{GeneSelectMMD}. The above code is used as an illustration
+on how to use the functions \code{gsMMD2} and \code{gsMMD2.default}.
+
+Note that the speed of the four functions is slow for large data sets. 
+So we recommend that the program be in background mode if it is run in
+Unix or Linux environment.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Error rates estimated for real microarray data sets}
+
+For real microarray data sets, the classical gene selection methods, such as two-sample t-test,
+two-sample Wilcoxon rank-sum test, could not provide the estimates of
+error rates such as false discovery rate (denoted as FDR;
+it is the percentage of nondifferentially expressed genes among selected
+genes),
+false non-discovery rate (denoted as FNDR; it is the percentage of differentially expressed genes among unselected genes), 
+false positive rate (denoted as FPR; it is the percentage of selected 
+genes among nondifferentially expressed genes), and
+false negative rate (denoted as FNR; it is the percentage of
+un-selected genes among differentially expressed genes),
+since the true gene cluster membership is unknown.
+
+
+However, model-based gene selection methods (e.g.,
+eLNN and eGG proposed by Lo and Gottardo (2007),\nocite{LoGottardo:2007} 
+and the method proposed by Qiu et al.'s (2008)) could easily estimate
+these error rates, since these error rates are functions of some 
+probabilities which are in turn the functions of model parameters.
+
+The function \code{errRates} is used to estimate FDR, FNDR, FPR, and FNR
+based on the objects returned by the four gene selection functions
+mentioned in the previous section. This function returns a $4\times 1$ vector
+with elements FDR, FNDR, FPR, and FNR.
+
+For example,
+<<echo=TRUE, eval=TRUE,print=FALSE>>=
+  library(GeneSelectMMD)
+  library(ALL)
+  data(ALL)
+  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+  
+  mem.str <- as.character(eSet1$BT)
+  nSubjects <- length(mem.str)
+  memSubjects <- rep(0,nSubjects)
+  # B3 coded as 0, T2 coded as 1
+  memSubjects[mem.str == "T2"] <- 1
+  
+  obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
+    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+
+  print(round(errRates(obj.gsMMD), 3))
+
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Visualizing the fit of the model to a real microarray data set}
+In general, it is difficult to visualize the fit of the model to
+a real microarray data set since the data are in high-dimensional space.
+However, it is possible to do so for the special case where the tissue
+samples within a tissue type are marginally independent. In this case,
+we can pool all gene expression levels together since they are all
+independent, and regard them as one-dimensional data. Next, we can
+impose the density estimate onto the histogram of this pooled data.
+
+The function \code{plotHistDensity} is used for such purpose.
+The following R code illustrates the usage of \code{plotHistDensity}:
+<<echo=TRUE, eval=TRUE,print=FALSE,fig=TRUE>>=
+  library(GeneSelectMMD)
+  library(ALL)
+  data(ALL)
+  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+  
+  mem.str <- as.character(eSet1$BT)
+  nSubjects <- length(mem.str)
+  memSubjects <- rep(0,nSubjects)
+  # B3 coded as 0 (control), T2 coded as 1 (case)
+  memSubjects[mem.str == "T2"] <- 1
+  
+  obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
+    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+
+
+  para <- obj.gsMMD$para
+  print(round(para, 3))
+
+
+  print(round(errRates(obj.gsMMD), 3))
+
+  plotHistDensity(obj.gsMMD, plotFlag = "case", 
+      mytitle = "Histogram of gene expression levels for T2\nimposed with estimated density (case)", 
+      plotComponent = TRUE, 
+      x.legend = c(0.8, 3), 
+      y.legend = c(0.3, 0.4), 
+      numPoints = 500,
+      cex.main = 1,
+      cex = 1)
+
+@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Discussion}
+
+
+The speeds of the four gene selection functions described in Section
+\ref{Section: Gene Selection Functions}  are slow. One way to improve the
+speed is to embed Fortran or C code in the R code. We will take such
+an approach in the future version of the \Rpackage{GeneSelectMMD}.
+
+
+\bibliographystyle{plain}
+\bibliography{GeneSelectMMD}
+
+\end{document}

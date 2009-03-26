@@ -1,0 +1,253 @@
+# box-cox transformation
+transBoxCox.default<-function(x, lambda, eps=1.0e-3)
+{
+  minx<-min(x)
+  if(minx<0)
+  { cat("****** Begin Warning ******** \n")
+    cat("Warning: Data contains non-positive values! To continue box-cox transformation,\n")
+    cat("We perform the following transformation:\n")
+    cat("x<-x+abs(min(x))+1\n")
+    cat("****** End Warning ******** \n")
+    x<-x+abs(minx)+1 
+  }
+
+  if(abs(lambda)<eps)
+  { return(log(x)) }
+  res<-(x^lambda-1)/lambda
+  return(res)
+}
+
+optimalLambda<-function(x, 
+                        criterion=c("cor", "skewness", "kurtosis"), 
+                        minL=-10, 
+                        maxL=10, 
+                        stepL=0.1, 
+                        eps=1.0e-3, 
+                        plotFlag=FALSE)
+{
+  criterion<-match.arg(criterion, c("cor", "skewness", "kurtosis"))
+  lambdaVec<-seq(from=minL, to=maxL, by=stepL)
+  len<-length(lambdaVec)
+  statVec<-rep(0, len)
+  for(i in 1:len)
+  { lambdai<-lambdaVec[i]  
+    x2<-transBoxCox.default(x, lambdai, eps)
+    if(criterion=="cor")
+    { tmp<-qqnormCorFunc(x2) 
+      statVec[i]<- -tmp
+    }
+    else if (criterion=="skewness")
+    { tmp<-skewnessFunc(x2)
+      statVec[i]<-abs(tmp[2])
+    } else # criterion=="kurtosis"
+    { tmp<-kurtosisFunc(x2)
+      statVec[i]<-abs(tmp[2])
+    }
+  }
+  
+  pos<-which(is.na(statVec)==TRUE)
+  if(length(pos))
+  { statVec<-statVec[-pos]
+    lambdaVec<-lambdaVec[-pos]
+  }
+  pos<-which(statVec==min(statVec))
+  pos<-pos[1]
+  lambda<-lambdaVec[pos]
+
+  if(plotFlag)
+  { plot(lambdaVec, statVec, xlab="lambda", ylab="correlation")
+    title(main="Box-Cox normality plot", sub=paste("optimal lambda=", lambda, sep=""))
+  }
+
+  res<-list(lambda=lambda, lambdaVec=lambdaVec, statVec=statVec)
+  return(res)
+}
+
+
+transBoxCoxMat<-function(mat,
+                      criterion=c("cor", "skewness", "kurtosis"),
+                      minL=-10, 
+                      maxL=10, 
+                      stepL=0.1, 
+                      eps=1.0e-3, 
+                      plotFlag=FALSE, 
+                      ITMAX=0)
+{
+  lambda.vec<-apply(mat, 2, transBoxCox2, criterion=criterion,
+        minL=minL, maxL=maxL, stepL=stepL,
+        eps=eps, plotFlag=plotFlag, ITMAX=ITMAX) 
+  lambda<-mean(lambda.vec)
+  #print(paste("******** average lambda=", lambda))
+  mat.new<-apply(mat, 2, transBoxCox.default, lambda=lambda, eps=eps) 
+  return(list(dat=mat.new, lambda.avg=lambda, lambda.vec=lambda.vec))
+}
+
+# box-cox transformation
+transBoxCox2<-function(x, 
+                      criterion=c("cor", "skewness", "kurtosis"),
+                      minL=-10, 
+                      maxL=10, 
+                      stepL=0.1, 
+                      eps=1.0e-3, 
+                      plotFlag=FALSE, 
+                      ITMAX=0)
+{
+  criterion<-match.arg(criterion, c("cor", "skewness", "kurtosis"))
+
+  xold<-x 
+  mycor<- -qqnormCorFunc(xold)
+  skewness<-abs(skewnessFunc(xold)[2])
+  kurtosis<-abs(kurtosisFunc(xold)[2])
+  
+  best.criVec<-c(mycor, skewness, kurtosis)
+  names(best.criVec)<-c("cor", "skewness", "kurtosis")
+  lambda.optim<-0
+
+  loop<-0
+  while(loop<=ITMAX)
+  {
+    loop<-loop+1
+    #print(paste("******loop=", loop))
+    tmp<-optimalLambda(xold, criterion, minL, maxL, stepL, eps, plotFlag)
+    lambda<-tmp$lambda
+    if(loop==1)
+    { lambda.optim<-lambda }
+    #print(paste("optimal lambda=", lambda))
+    xnew<-transBoxCox.default(xold, lambda, eps)
+    mycor<- -qqnormCorFunc(xnew)
+    skewness<-abs(skewnessFunc(xnew)[2])
+    kurtosis<-abs(kurtosisFunc(xnew)[2])
+    criVec<-c(mycor, skewness, kurtosis)
+    names(criVec)<-c("cor", "skewness", "kurtosis")
+
+    diff<-abs(best.criVec-criVec)
+    tmp<-sum(best.criVec<criVec)
+    if(tmp>1 || diff<eps)
+    { 
+      break
+    } 
+    best.criVec<-criVec
+    xold<-xnew
+    lambda.optim<-lambda
+  }
+  return(lambda.optim)
+}
+
+
+
+# box-cox transformation
+transBoxCox<-function(x, 
+                      criterion=c("cor", "skewness", "kurtosis"),
+                      minL=-10, 
+                      maxL=10, 
+                      stepL=0.1, 
+                      eps=1.0e-3, 
+                      plotFlag=FALSE, 
+                      ITMAX=0)
+{
+  criterion<-match.arg(criterion, c("cor", "skewness", "kurtosis"))
+
+  xold<-x 
+  mycor<- -qqnormCorFunc(xold)
+  skewness<-abs(skewnessFunc(xold)[2])
+  kurtosis<-abs(kurtosisFunc(xold)[2])
+  
+  best.criVec<-c(mycor, skewness, kurtosis)
+  names(best.criVec)<-c("cor", "skewness", "kurtosis")
+
+  loop<-0
+  while(loop<=ITMAX)
+  {
+    loop<-loop+1
+    #print(paste("******loop=", loop))
+    tmp<-optimalLambda(xold, criterion, minL, maxL, stepL, eps, plotFlag)
+    lambda<-tmp$lambda
+    #print(paste("optimal lambda=", lambda))
+    xnew<-transBoxCox.default(xold, lambda, eps)
+    mycor<- -qqnormCorFunc(xnew)
+    skewness<-abs(skewnessFunc(xnew)[2])
+    kurtosis<-abs(kurtosisFunc(xnew)[2])
+    criVec<-c(mycor, skewness, kurtosis)
+    names(criVec)<-c("cor", "skewness", "kurtosis")
+
+    diff<-abs(best.criVec-criVec)
+    tmp<-sum(best.criVec<criVec)
+    if(tmp>1 || diff<eps)
+    { 
+      break
+    } 
+    best.criVec<-criVec
+    xold<-xnew
+  }
+  return(xold)
+}
+
+skewnessFunc<-function(x)
+{
+  n<-length(x)
+  xbar<-mean(x)
+  numer<-sum((x-xbar)^3)*sqrt(n)
+  denom<-(sum((x-xbar)^2))^(3/2)
+  g1<-numer/denom
+  G1<-g1*sqrt(n*(n-1))/(n-2)
+  res<-c(g1, G1)
+  names(res)<-c("g1", "G1")
+  return(res)
+}
+
+kurtosisFunc<-function(x)
+{
+  n<-length(x)
+  xbar<-mean(x)
+  numer<-sum((x-xbar)^4)*n
+  denom<-(sum((x-xbar)^2))^2
+  g2<-numer/denom-3
+
+  k2<-sum((x-xbar)^2)/(n-1)
+  part1numer<-(n+1)*n
+  part1denom<-(n-1)*(n-2)*(n-3)
+  part1<-part1numer/part1denom
+
+  part2numer<-sum((x-xbar)^4)
+  part2<-part2numer/k2^2
+
+  part3<-3*(n-1)^2/((n-2)*(n-3))
+
+  G2<-part1*part2-part3
+
+  res<-c(g2, G2)
+  names(res)<-c("g2", "G2")
+
+  return(res)
+}
+
+qqnormCorFunc<-function(x)
+{
+  tmp<-qqnorm(x, plot.it=FALSE) 
+  x<-tmp$x
+  y<-tmp$y
+  sd.x<-sd(x)
+  sd.y<-sd(y)
+  if(sd.x>0 && sd.y>0)
+  { res<-cor(x, y) }
+  else {
+    res<-0
+  }
+
+  return(res)
+}
+
+# arctan transformation
+# to reduce the effect of extreme values for distribution with 
+# high kurtosis and low skewness.
+# After the transformation, the value of kurtosis is reduced.
+arctanTrans<-function(y,a=1)
+{
+  ybar<-mean(y)
+  s<-sd(y)
+
+  x<-atan(a*(y-ybar)/s)
+
+  return(x)
+}
+

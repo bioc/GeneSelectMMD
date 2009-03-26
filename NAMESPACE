@@ -1,0 +1,32 @@
+export(
+  gsMMD,
+  gsMMD.default,
+  gsMMD2,
+  gsMMD2.default,
+  errRates,
+  plotHistDensity
+)
+
+importMethodsFrom(Biobase,
+                 exprs)
+
+importFrom(MASS,
+          ginv)
+
+importFrom(graphics,
+          hist,
+          legend,
+          lines,
+          plot,
+          title)
+
+importFrom(stats,
+          cor,
+          dnorm,
+          qqnorm,
+          sd,
+          t.test,
+          var,
+          wilcox.test)
+
+

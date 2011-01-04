@@ -8,9 +8,7 @@ function(obj.eSet,
          alpha=0.05, 
          transformFlag=FALSE, 
          transformMethod="boxcox", 
-         scaleFlag=FALSE, 
-         if.center=TRUE, 
-         if.scale=TRUE,
+         scaleFlag=TRUE, 
          criterion=c("cor", "skewness", "kurtosis"),
          minL=-10, 
          maxL=10, 
@@ -33,8 +31,6 @@ function(obj.eSet,
          transformFlag,
          transformMethod,
          scaleFlag,
-         if.center,
-         if.scale,
          criterion,
          minL,
          maxL,
@@ -59,9 +55,7 @@ function(X,
          alpha=0.05, 
          transformFlag=FALSE, 
          transformMethod="boxcox", 
-         scaleFlag=FALSE, 
-         if.center=TRUE, 
-         if.scale=TRUE,
+         scaleFlag=TRUE, 
          criterion=c("cor", "skewness", "kurtosis"),
          minL=-10, 
          maxL=10, 
@@ -75,8 +69,11 @@ function(X,
   transformMethod<-match.arg(transformMethod, choices=c("boxcox", "log2", "log10", "log", "none"))
   criterion<-match.arg(criterion, c("cor", "skewness", "kurtosis"))
 
+  X<-as.matrix(X)
   nGenes<-nrow(X)
   nSubjects<-ncol(X)
+  nCases<-sum(memSubjects==1)
+  nControls<-sum(memSubjects==0)
 
   if(sum(is.null(geneNames)))
   { geneNames<-paste("gene", 1:nGenes, sep="") }
@@ -85,6 +82,22 @@ function(X,
   lambda<-NA
   if(transformFlag)
   { 
+    if(transformMethod!="none")
+    {
+      vec<-as.numeric(X)
+      min.vec<-min(vec)
+      if(min.vec<0)
+      {
+        cat("****** Begin Warning ******** \n")
+        cat("Warning: Data contains non-positive values! To continue ",
+           transformMethod, " transformation,\n")
+        cat("We first perform the following transformation:\n")
+        cat("x<-x+abs(min(x))+1\n")
+        cat("****** End Warning ******** \n")
+    
+        X<-X+abs(min.vec)+1
+      }
+    }
     tmp<-transFunc(X, transformMethod, criterion, 
                    minL, maxL, stepL, eps, plotFlag, ITMAX=0) 
     if(transformMethod=="boxcox")
@@ -102,38 +115,62 @@ function(X,
   {
     if(!quiet)
     { cat("Gene profiles are scaled so that they have mean zero and variance one!\n") }
-    X<-t(apply(X, 1, scale, center=if.center, scale=if.scale))
+    X<-t(apply(X, 1, scale, center=TRUE, scale=TRUE))
+
+    # to avoid linear dependence of tissue samples after scaling
+    # gene profiles, we delete a tissue sample.
+    # We arbitrarily select the tissue sample, which has the biggest label number, 
+    # from the tissue sample group that has larger size than the other 
+    # tissue sample group. For example, if there are 6 cancer tissue samples 
+    # and 10 normal tissue samples, we delete the 10-th normal tissue sample after scaling.
+
+    if(nCases>nControls)
+    { 
+      pos<-which(memSubjects==1)
+      pos2<-pos[nCases]
+      X<-X[,-pos2]
+      memSubjects<-memSubjects[-pos2]
+    } else {
+      pos<-which(memSubjects==0)
+      pos2<-pos[nControls]
+      X<-X[,-pos2]
+      memSubjects<-memSubjects[-pos2]
+    }
+    nCases<-sum(memSubjects==1)
+    nControls<-sum(memSubjects==0)
+    nSubjects<-nCases+nControls
   }
 
-  cat("Programming is running. Please be patient...\n")
+  #cat("Programming is running. Please be patient...\n")
   # records initial parameter estimates
   tmpIni<-getPara(X, memSubjects, memIni, eps)
-  paraIni<-tmpIni$para
+  paraIniRP<-tmpIni$para
 
   # records initial log-likelihood estimates
   llkhIni<-tmpIni$llkh
 
   # records E(z_{ij} | x_i, Psi^{(m)})
   wiMat<-matrix(0, nrow=nGenes, ncol=3)
-  {
-    # Gene Selection based on EM algorithm
-    res<- paraEst(X, paraIni, memSubjects=memSubjects, 
-                   maxFlag=maxFlag, thrshPostProb, geneNames=geneNames,
-                   ITMAX=ITMAX, eps=eps)
+  # Gene Selection based on EM algorithm
+  res<- paraEst(X, paraIniRP, memSubjects=memSubjects, 
+                 maxFlag=maxFlag, thrshPostProb, geneNames=geneNames,
+                 ITMAX=ITMAX, eps=eps, quiet=quiet)
 
-    if(res$loop==0)
-    {
-      para<-paraIni
-      llkh<-llkhIni
-      memGenes<-memIni
-      wiMat<-res$wiMat
-    } else {
-      para<-res$para
-      llkh<-res$llkh
-      memGenes<-res$memGenes
-      wiMat<-res$wiMat
-    }
+  if(res$loop==0)
+  {
+    paraRP<-paraIniRP
+    llkh<-llkhIni
+    memGenes<-memIni
+    wiMat<-res$memMat
+  } else {
+    paraRP<-res$para
+    llkh<-res$llkh
+    memGenes<-res$memGenes
+    wiMat<-res$memMat
   }
+  para<-paraRPConverter(paraRP, nCases, nControls)
+  names(para)<-paraNames
+  names(paraRP)<-paraNamesRP
 
   names(memGenes)<-geneNames
   rownames(wiMat)<-geneNames
@@ -141,6 +178,10 @@ function(X,
 
   memGenes2<-rep(1, nGenes)
   memGenes2[memGenes==2]<-0 # non-differentially expressed genes
+
+  paraIni<-paraRPConverter(paraIniRP, nCases, nControls)
+  names(paraIni)<-paraNames
+  names(paraIniRP)<-paraNamesRP
 
   if(!quiet)
   {

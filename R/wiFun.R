@@ -1,59 +1,75 @@
 # get wij=pi.j*f.j(xi)/[pi.1*f.1(xi)+pi.2*f.2(xi)+pi.3*f.3(xi)]
 # j=1,2,3
-# Psi.m=(pi.1, pi.2, pi.3, 
-#        mu.c1, sigma2.c1, rho.c1, 
-#        mu.n1, sigma2.n1, rho.n1, 
-#        mu.2, sigma2.2, rho.2, 
-#        mu.c3, sigma2.c3, rho.c3, 
-#        mu.n3, sigma2.n3, rho.n3) 
+# Psi.m=(pi.1, pi.2, 
+#        mu.c1, tau.c1, r.c1, 
+#        delta.n1, tau.n1, r.n1, 
+#        mu.2, tau.2, r.2, 
+#        mu.c3, tau.c3, r.c3, 
+#        delta.n3, tau.n3, r.n3) 
 
 "wiFun" <-
 function(Xi, Psi.m, memSubjects, eps=1.0e-6)
 {
   # check if parameters are in appropriate ranges
-  checkPara(Psi.m)
+  checkPara(Psi.m, eps)
+  nc<-sum(memSubjects==1)
+  nn<-sum(memSubjects==0)
+  n<-nc+nn
 
   # mixture proportions
-  pi.1<-Psi.m[1]; pi.2<-Psi.m[2]; pi.3<-Psi.m[3];
+  pi.1<-Psi.m[1]; pi.2<-Psi.m[2]; 
+  #pi.3<-Psi.m[3];
+  pi.3<-1-pi.1-pi.2
 
   # mean expression level for cluster 1 for diseased subjects
-  mu.c1<-Psi.m[4]; 
+  mu.c1<-Psi.m[3]; 
   # variance of expression levels for cluster 1 for diseased subjects
-  sigma2.c1<-Psi.m[5]; 
-  # correlation among expression levels for cluster 1 for diseased subjects
-  rho.c1<-Psi.m[6]; 
+  tau.c1<-Psi.m[4]; 
+  sigma2.c1<-exp(tau.c1)
+  #modified logit of correlation among expression levels for cluster 1 for diseased subjects
+  r.c1<-Psi.m[5]; 
+  rho.c1<-(exp(r.c1)-1/(nc-1))/(1+exp(r.c1))
 
-  # mean expression level for cluster 1 for normal subjects
-  mu.n1<-Psi.m[7]; 
+  # mu.n1=mu.c1-exp(delta.n1)
+  # =mean expression level for cluster 1 for normal subjects
+  delta.n1<-Psi.m[6]; 
+  mu.n1<-mu.c1-exp(delta.n1)
   # variance of expression levels for cluster 1 for normal subjects
-  sigma2.n1<-Psi.m[8]; 
-  # correlation among expression levels for cluster 1 for normal subjects
-  rho.n1<-Psi.m[9]; 
+  tau.n1<-Psi.m[7]; 
+  sigma2.n1<-exp(tau.n1)
+  # modified logit of correlation among expression levels for cluster 1 for normal subjects
+  r.n1<-Psi.m[8]; 
+  rho.n1<-(exp(r.n1)-1/(nn-1))/(1+exp(r.n1))
 
   # mean expression level for cluster 2
-  mu.2<-Psi.m[10]; 
+  mu.2<-Psi.m[9]; 
   # variance of expression levels for cluster 2
-  sigma2.2<-Psi.m[11]; 
-  # correlation among expression levels for cluster 2
-  rho.2<-Psi.m[12]; 
+  tau.2<-Psi.m[10]; 
+  sigma2.2<-exp(tau.2)
+  #modified logit of correlation among expression levels for cluster 2
+  r.2<-Psi.m[11]; 
+  rho.2<-(exp(r.2)-1/(n-1))/(1+exp(r.2))
 
   # mean expression level for cluster 3 for diseased subjects
-  mu.c3<-Psi.m[13]; 
+  mu.c3<-Psi.m[12]; 
   # variance of expression levels for cluster 3 for diseased subjects
-  sigma2.c3<-Psi.m[14]; 
-  # correlation among expression levels for cluster 3 for diseased subjects
-  rho.c3<-Psi.m[15]; 
+  tau.c3<-Psi.m[13]; 
+  sigma2.c3<-exp(tau.c3)
+  #modified logit of correlation among expression levels for cluster 3 for diseased subjects
+  r.c3<-Psi.m[14]; 
+  rho.c3<-(exp(r.c3)-1/(nc-1))/(1+exp(r.c3))
 
-  # mean expression level for cluster 3 for normal subjects
-  mu.n3<-Psi.m[16]; 
+  # mu.n3=mu.c3+exp(delta.n3)
+  # =mean expression level for cluster 3 for normal subjects
+  delta.n3<-Psi.m[15]; 
+  mu.n3<-mu.c3+exp(delta.n3)
   # variance of expression levels for cluster 3 for normal subjects
-  sigma2.n3<-Psi.m[17]; 
-  # correlation among expression levels for cluster 3 for normal subjects
-  rho.n3<-Psi.m[18]; 
+  tau.n3<-Psi.m[16]; 
+  sigma2.n3<-exp(tau.n3)
+  # modified logit of correlation among expression levels for cluster 3 for normal subjects
+  r.n3<-Psi.m[17]; 
+  rho.n3<-(exp(r.n3)-1/(nn-1))/(1+exp(r.n3))
 
-  n<-length(Xi) # number of patients/subjects
-  nc<-sum(memSubjects==1)  # number of cases
-  nn<-sum(memSubjects==0)  # number of controls
   if(nc>=n){
     stop("Number of cases >= Total number of patients!\n")
   }
@@ -83,8 +99,8 @@ function(Xi, Psi.m, memSubjects, eps=1.0e-6)
   part.n1<-( aiTai.n1  - rho.n1* aiT12.n1 / (1+(nn-1)*rho.n1) )/ (sigma2.n1 * (1-rho.n1)) 
   delta1<- (part.c1+part.n1)
 
-  log.detSigma1<-nc*log(sigma2.c1)+(nc-1)*log(1-rho.c1)+log(1+(nc-1)*rho.c1)+
-                 nn*log(sigma2.n1)+(nn-1)*log(1-rho.n1)+log(1+(nn-1)*rho.n1)
+  log.detSigma1<-nc*log(sigma2.c1)+((nc-1)*log(1-rho.c1)+log(1+(nc-1)*rho.c1))+
+                 nn*log(sigma2.n1)+((nn-1)*log(1-rho.n1)+log(1+(nn-1)*rho.n1))
 
   ###
   # density for genes in cluster 2 (non-expressed)
@@ -94,25 +110,8 @@ function(Xi, Psi.m, memSubjects, eps=1.0e-6)
   aiTai.2<-XiTXi-2*mu.2*XiT1+n*mu.2^2
   aiT12.2<-XiT1^2-2*n*mu.2*XiT1+n^2*mu.2^2
 
-  n<-length(Xi)
-  one<-rep(1,n)
-
-  Sigma.2<-sigma2.2*(1-rho.2)*(diag(n)+rho.2/(1-rho.2)*one%*%t(one))
-  egvalues.2<-eigen(Sigma.2)$values
-  tmp.2<-(try( solve(Sigma.2), silent=TRUE))
-  if(class(tmp.2) == "try-error")
-  { 
-    tmppos.2<-which(egvalues.2==min(egvalues.2))
-    egvalues.2<-egvalues.2[-tmppos.2]
-    det.Sigma.2<-prod(egvalues.2)
-    iSigma.2<-ginv(Sigma.2)
-    ai.2<-Xi-mu.2*one
-    delta2<-t(ai.2)%*%iSigma.2%*%ai.2
-    log.detSigma2<-log(det.Sigma.2)
-  } else {
-    delta2<-( aiTai.2  - rho.2* aiT12.2 / (1+(n-1)*rho.2) )/ (sigma2.2 * (1-rho.2)) 
-    log.detSigma2<-n*log(sigma2.2)+(n-1)*log(1-rho.2)+log(1+(n-1)*rho.2)
-  }
+  delta2<-( aiTai.2  - rho.2* aiT12.2 / (1+(n-1)*rho.2) )/ (sigma2.2 * (1-rho.2)) 
+  log.detSigma2<-n*log(sigma2.2)+((n-1)*log(1-rho.2)+log(1+(n-1)*rho.2))
  
   ###
   # density for genes in cluster 3 (under-expressed)
@@ -130,8 +129,6 @@ function(Xi, Psi.m, memSubjects, eps=1.0e-6)
   log.detSigma3<-nc*log(sigma2.c3)+(nc-1)*log(1-rho.c3)+log(1+(nc-1)*rho.c3)+
                  nn*log(sigma2.n3)+(nn-1)*log(1-rho.n3)+log(1+(nn-1)*rho.n3)
 
-
- 
   tt<-c(delta1, delta2, delta3)
   names(tt)<-c("delta1", "delta2", "delta3")
   pos<-which(tt==min(tt))
@@ -213,46 +210,12 @@ function(Xi, Psi.m, memSubjects, eps=1.0e-6)
 
 checkPara<-function(para, eps=1.0e-6)
 {
-  if(length(para) !=TNumPara)
+  if(length(para) !=TNumParaRP)
   { stop("Number of parameters is not correct!\n") }
 
   # mixture proportions
-  pi.1<-para[1]; pi.2<-para[2]; pi.3<-para[3];
-
-  # mean expression level for cluster 1 for diseased subjects
-  mu.c1<-para[4]; 
-  # variance of expression levels for cluster 1 for diseased subjects
-  sigma2.c1<-para[5]; 
-  # correlation among expression levels for cluster 1 for diseased subjects
-  rho.c1<-para[6]; 
-
-  # mean expression level for cluster 1 for normal subjects
-  mu.n1<-para[7]; 
-  # variance of expression levels for cluster 1 for normal subjects
-  sigma2.n1<-para[8]; 
-  # correlation among expression levels for cluster 1 for normal subjects
-  rho.n1<-para[9]; 
-
-  # mean expression level for cluster 2
-  mu.2<-para[10]; 
-  # variance of expression levels for cluster 2
-  sigma2.2<-para[11]; 
-  # correlation among expression levels for cluster 2
-  rho.2<-para[12]; 
-
-  # mean expression level for cluster 3 for diseased subjects
-  mu.c3<-para[13]; 
-  # variance of expression levels for cluster 3 for diseased subjects
-  sigma2.c3<-para[14]; 
-  # correlation among expression levels for cluster 3 for diseased subjects
-  rho.c3<-para[15]; 
-
-  # mean expression level for cluster 3 for normal subjects
-  mu.n3<-para[16]; 
-  # variance of expression levels for cluster 3 for normal subjects
-  sigma2.n3<-para[17]; 
-  # correlation among expression levels for cluster 3 for normal subjects
-  rho.n3<-para[18]; 
+  pi.1<-para[1]; pi.2<-para[2]; 
+  pi.3<- 1-pi.1-pi.2
 
   if(pi.1>=1 || pi.1<=0)
   { cat("pi.1=", pi.1, " pi.2=", pi.2, " pi.3=",pi.3,"\n") 
@@ -266,28 +229,6 @@ checkPara<-function(para, eps=1.0e-6)
   if(abs((pi.1+pi.2+pi.3)-1)>eps)
   { cat("pi.1=", pi.1, " pi.2=", pi.2, " pi.3=",pi.3,"\n") 
     stop("pi.1+pi.2+pi.3 should be equal to 1!\n") }
-
-  if(sigma2.c1<=0)
-  { stop("sigma2.c1 should be positive!\n") }
-  if(sigma2.n1<=0)
-  { stop("sigma2.n1 should be positive!\n") }
-  if(sigma2.2<=0)
-  { stop("sigma2 should be positive!\n") }
-  if(sigma2.c3<=0)
-  { stop("sigma2.c3 should be positive!\n") }
-  if(sigma2.n3<=0)
-  { stop("sigma2.n3 should be positive!\n") }
-
-  if(rho.c1< -1 || rho.c1>1)
-  { stop("rho.c1 should be in (-1, 1)!\n") }
-  if(rho.n1< -1 || rho.n1>1)
-  { stop("rho.n1 should be in (-1, 1)!\n") }
-  if(rho.2< -1 || rho.2>1)
-  { stop("rho.2 should be in (-1, 1)!\n") }
-  if(rho.c3< -1 || rho.c3>1)
-  { stop("rho.c3 should be in (-1, 1)!\n") }
-  if(rho.n3< -1 || rho.n3>1)
-  { stop("rho.n3 should be in (-1, 1)!\n") }
 
 }
 

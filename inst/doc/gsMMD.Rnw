@@ -134,6 +134,10 @@ there are only two tissue types and for the case where
 tissue samples within a tissue type are conditionally independent given
 the gene (c.f. Qiu et al., 2008). 
 
+Note that starting from version 1.7.1, we reparameterize the model parameters.
+The input and output are the same as the previous versions.
+To improve speed, we use numerical optimization, instead of iteration based on explicit formula, to obtain parameter estimates.
+
 %\clearpage
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -213,7 +217,6 @@ non-differentially expressed,
 so we assume $\pi_2>\pi_1$ and $\pi_2>\pi_3$.
 
 
-
 The model parameters can be estimated using the EM
 algorithm (Dempster et al., 1977).\nocite{DempsterEtAl:1977}
 
@@ -279,7 +282,109 @@ that the marginal correlations are ignorable, we
 then could produce such a plot to evaluate the goodness of fit of
 MMD to the real microarray data set.
 
+\section{Reparametrization}
 
+
+To guarantee the constraints $\mu_{c_1}>\mu_{n_1}$ and
+$\mu_{c_3}<\mu_{n_3}$ in the iteration of the EM algorithm, we
+re-parameterize the model parameters:
+\begin{equation*}
+\begin{aligned}
+\mu_{n_1}=&\mu_{c_1}-\exp(\triangle_{n_1}),\\
+\mu_{n_3}=&\mu_{c_3}+\exp(\triangle_{n_3}).
+\end{aligned}
+\end{equation*}
+
+To make sure the marginal covariance matrices are positive definite,
+we set the constraints:
+\begin{equation*}
+\begin{aligned}
+-\frac{1}{n_c-1}<&\rho_{c_1}<1\\
+-\frac{1}{n_n-1}<&\rho_{n_1}<1\\
+-\frac{1}{n-1}<&\rho_{2}<1\\
+-\frac{1}{n_c-1}<&\rho_{c_3}<1\\
+-\frac{1}{n_n-1}<&\rho_{n_3}<1
+\end{aligned}
+\end{equation*}
+To make sure the above inequalities hold, we reparametrize $\rho$s as follows:
+\begin{equation*}
+\begin{aligned}
+\rho_{c_1}=&\frac{\exp(r_{c_1})-1/(n_c-1)}{1+\exp(r_{c_1})}\\
+\rho_{n_1}=&\frac{\exp(r_{n_1})-1/(n_n-1)}{1+\exp(r_{n_1})}\\
+\rho_{2}=&\frac{\exp(r_{2})-1/(n-1)}{1+\exp(r_{2})}\\
+\rho_{c_3}=&\frac{\exp(r_{c_3})-1/(n_c-3)}{1+\exp(r_{c_3})}\\
+\rho_{n_3}=&\frac{\exp(r_{n_3})-1/(n_n-3)}{1+\exp(r_{n_3})}.
+\end{aligned}
+\end{equation*}
+
+Another set of constraints are:
+\begin{equation*}
+\begin{aligned}
+0<&\pi_k<1,\quad k=1, 2, 3,\\
+\pi_3=&1-\pi_1-\pi_2.
+\end{aligned}
+\end{equation*}
+
+Then the reparametrized MMD model is
+\begin{equation}
+f(\mb{x})=\pi_1
+f_1(\mb{x}|\mb{\theta}_1)+\pi_2f_2(\mb{x}|\mb{\theta}_2)
++(1-\pi_1-\pi_2) f_3(\mb{x}|\mb{\theta}_3),
+\end{equation}
+where
+\begin{equation}
+\begin{aligned}
+\mb{\theta}_1=&(\mu_{c_1}, \sigma_{c_1}^2, r_{c_1}, \triangle_{n_1}, \sigma_{n_1}^2, r_{n_1})^T,\\
+\mb{\theta}_2=&(\mu_2, \sigma_2^2, r_{2})^T,\\
+\mb{\theta}_3=&(\mu_{c_3}, \sigma_{c_3}^2, r_{c_3},
+\triangle_{n_3}, \sigma_{n_3}^2, r_{n_3})^T,
+\end{aligned}
+\end{equation}
+and $f_1$, $f_2$, and $f_3$ are the density functions for
+multivariate normal distributions with mean vectors
+\begin{equation}
+\mb{\mu}_1=\left(
+\begin{array}{c}
+\mu_{c_1}\mb{1}_{n_c}\\
+\left[\mu_{c_1}-\exp(\triangle_{n_1})\right]\mb{1}_{n_n}
+\end{array}
+\right),\; \mb{\mu}_2=\mu_2\mb{1}_{n},\; \mb{\mu}_3=\left(
+\begin{array}{c}
+\mu_{c_3}\mb{1}_{n_c}\\
+\left[\mu_{c_3}+\exp(\triangle_{n_3})\right]\mb{1}_{n_n}
+\end{array}
+\right)
+\end{equation}
+and covariance matrices
+\begin{equation}
+\begin{aligned}
+\mb{\Sigma}_1=&\left(
+\begin{array}{cc}
+\sigma^2_{c_1}\frac{n_c}{(n_c-1)(1+\exp(r_{c_1}))}\mb{R}_{0,c_1}&\mb{0}\\
+\mb{0}&\sigma^2_{n_1}\frac{n_n}{(n_n-1)(1+\exp(r_{n_1}))}\mb{R}_{0,n_1}
+\end{array}
+\right),\\
+\mb{\Sigma_2}=&\sigma^2_2\frac{n}{(n-1)(1+\exp(r_{2}))}\mb{R}_{0,2},\\
+\mb{\Sigma}_3=&\left(
+\begin{array}{cc}
+\sigma^2_{c_3}\frac{n_c}{(n_c-1)(1+\exp(r_{c_3}))}\mb{R}_{0,c_3}&\mb{0}\\
+\mb{0}&\sigma^2_{n_3}\frac{n_n}{(n_n-1)(1+\exp(r_{n_3}))}\mb{R}_{0,n_3}
+\end{array}
+\right).
+\end{aligned}
+\end{equation}
+The matrices $\mb{R}_{0, c_1}$, $\mb{R}_{0, n_1}$, $\mb{R}_{0, 2}$,
+$\mb{R}_{0, c_3}$, and $\mb{R}_{0, n_3}$ are defined as below:
+\begin{equation}
+\begin{aligned}
+\mb{R}_{0, c_1}=&\mb{I}_{n_c}+\frac{(n_c-1)\exp(r_{c_1})-1}{n_{c_1}}\mb{1}_{n_c}\mb{1}_{n_c}^T,\\
+\mb{R}_{0, n_1}=&\mb{I}_{n_n}+\frac{(n_n-1)\exp(r_{n_1})-1}{n_{n_1}}\mb{1}_{n_n}\mb{1}_{n_n}^T,\\
+\mb{R}_{0, 2}=&\mb{I}_{n}+\frac{(n-1)\exp(r_{2})-1}{n_{2}}\mb{1}_{n}\mb{1}_{n}^T,\\
+\mb{R}_{0, c_3}=&\mb{I}_{n_c}+\frac{(n_c-1)\exp(r_{c_3})-1}{n_{c_3}}\mb{1}_{n_c}\mb{1}_{n_c}^T,\\
+\mb{R}_{0,
+n_3}=&\mb{I}_{n_n}+\frac{(n_n-1)\exp(r_{n_3})-1}{n_{n_3}}\mb{1}_{n_n}\mb{1}_{n_n}^T.
+\end{aligned}
+\end{equation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -390,13 +495,13 @@ For example, to obtain differentially expressed genes for the ALL data
   memSubjects[mem.str == "T2"] <- 1
   
   obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
-    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+    transformMethod = "boxcox", scaleFlag = TRUE, quiet = TRUE)
   para <- obj.gsMMD$para
   print(round(para, 3))
 
 @
 or
-<<echo=TRUE, eval=TRUE,print=FALSE>>=
+<<echo=TRUE, eval=FALSE,print=FALSE>>=
   library(GeneSelectMMD)
   library(ALL)
   data(ALL)
@@ -410,7 +515,8 @@ or
   memSubjects[mem.str == "T2"] <- 1
  
   obj.gsMMD <- gsMMD.default(mat, memSubjects, iniGeneMethod = "Ttest",
-          transformFlag = TRUE, transformMethod = "boxcox", scaleFlag = TRUE)
+          transformFlag = TRUE, transformMethod = "boxcox", scaleFlag = TRUE,
+          quiet=TRUE)
   para <- obj.gsMMD$para
   print(round(para, 3))
 
@@ -419,7 +525,7 @@ or
 If we would like to provide the initial 3-cluster partition via the
 two sample Wilcoxon rank-sum test, then
 we can run either
-<<echo=TRUE, eval=TRUE,print=FALSE>>=
+<<echo=TRUE, eval=FALSE,print=FALSE>>=
   library(GeneSelectMMD)
   library(ALL)
   data(ALL)
@@ -455,13 +561,13 @@ we can run either
   print(table(memIni))
 
   obj.gsMMD <- gsMMD2(eSet1, memSubjects, memIni, transformFlag = TRUE, 
-       transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+       transformMethod = "boxcox", scaleFlag = TRUE, quiet = TRUE)
   para <- obj.gsMMD$para
   print(round(para, 3))
 
 @
 or
-<<echo=TRUE, eval=TRUE,print=FALSE>>=
+<<echo=TRUE, eval=FALSE,print=FALSE>>=
   library(GeneSelectMMD)
   library(ALL)
   data(ALL)
@@ -497,7 +603,8 @@ or
   print(table(memIni))
   
   obj.gsMMD <- gsMMD2.default(mat, memSubjects, memIni = memIni,
-          transformFlag = TRUE, transformMethod = "boxcox", scaleFlag = TRUE)
+          transformFlag = TRUE, transformMethod = "boxcox", scaleFlag = TRUE,
+          quiet=TRUE)
   para <- obj.gsMMD$para
   print(round(para, 3))
 
@@ -542,20 +649,6 @@ with elements FDR, FNDR, FPR, and FNR.
 
 For example,
 <<echo=TRUE, eval=TRUE,print=FALSE>>=
-  library(GeneSelectMMD)
-  library(ALL)
-  data(ALL)
-  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
-  
-  mem.str <- as.character(eSet1$BT)
-  nSubjects <- length(mem.str)
-  memSubjects <- rep(0,nSubjects)
-  # B3 coded as 0, T2 coded as 1
-  memSubjects[mem.str == "T2"] <- 1
-  
-  obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
-    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
-
   print(round(errRates(obj.gsMMD), 3))
 
 @
@@ -574,27 +667,6 @@ impose the density estimate onto the histogram of this pooled data.
 The function \code{plotHistDensity} is used for such purpose.
 The following R code illustrates the usage of \code{plotHistDensity}:
 <<echo=TRUE, eval=TRUE,print=FALSE,fig=TRUE>>=
-  library(GeneSelectMMD)
-  library(ALL)
-  data(ALL)
-  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
-  
-  mem.str <- as.character(eSet1$BT)
-  nSubjects <- length(mem.str)
-  memSubjects <- rep(0,nSubjects)
-  # B3 coded as 0 (control), T2 coded as 1 (case)
-  memSubjects[mem.str == "T2"] <- 1
-  
-  obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
-    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
-
-
-  para <- obj.gsMMD$para
-  print(round(para, 3))
-
-
-  print(round(errRates(obj.gsMMD), 3))
-
   plotHistDensity(obj.gsMMD, plotFlag = "case", 
       mytitle = "Histogram of gene expression levels for T2\nimposed with estimated density (case)", 
       plotComponent = TRUE, 
@@ -606,9 +678,7 @@ The following R code illustrates the usage of \code{plotHistDensity}:
 
 @
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \section{Discussion}
-
 
 The speeds of the four gene selection functions described in Section
 \ref{Section: Gene Selection Functions}  are slow. One way to improve the

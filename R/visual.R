@@ -18,11 +18,13 @@ plotHistDensity<-function(obj.gsMMD,
   plotFlag<-match.arg(plotFlag, choices=c("case", "control"))
 
   dat<-obj.gsMMD$dat
-  para<-obj.gsMMD$para
+  para<-as.numeric(obj.gsMMD$para)
+  names(para)<-paraNames
   memSubjects<-obj.gsMMD$memSubjects
 
   nCases<-sum(memSubjects==1)
   nControls<-sum(memSubjects==0)
+  n<-nCases+nControls
 
   pi.1<-para[1]
   pi.2<-para[2]
@@ -30,20 +32,22 @@ plotHistDensity<-function(obj.gsMMD,
   mu.c1<-para[4]
   sigma2.c1<-para[5]
   rho.c1<-para[6]
+
   mu.n1<-para[7]
   sigma2.n1<-para[8]
   rho.n1<-para[9]
+
   mu.2<-para[10]
   sigma2.2<-para[11]
   rho.2<-para[12]
+
   mu.c3<-para[13]
   sigma2.c3<-para[14]
   rho.c3<-para[15]
+
   mu.n3<-para[16]
   sigma2.n3<-para[17]
   rho.n3<-para[18]
-
-
 
   if(plotFlag=="case")
   { x<-as.vector(dat[,memSubjects==1, drop=FALSE])
@@ -56,30 +60,16 @@ plotHistDensity<-function(obj.gsMMD,
   delta<-floor(len.x/numPoints)
   x2<-x[seq(from=1,to=len.x, by=delta)]
 
-  pi1<-pi.1
-  pi2<-pi.2
-  pi3<-pi.3
-  muc1<-mu.c1
-  mun1<-mu.n1
-  sigmac12<-sigma2.c1
-  sigman12<-sigma2.n1
-  xi<-mu.2
-  tau2<-sigma2.2
-  muc3<-mu.c3
-  mun3<-mu.n3
-  sigmac32<-sigma2.c3
-  sigman32<-sigma2.n3
-
   if(plotFlag=="case")
-  { y1<-pi1*dnorm(x2, mean=muc1, sd=sqrt(sigmac12))
-    y2<-pi2*dnorm(x2, mean=xi, sd=sqrt(tau2))
-    y3<-pi3*dnorm(x2, mean=muc3, sd=sqrt(sigmac32))
+  { y1<-pi.1*dnorm(x2, mean=mu.c1, sd=sqrt(sigma2.c1))
+    y2<-pi.2*dnorm(x2, mean=mu.2, sd=sqrt(sigma2.2))
+    y3<-pi.3*dnorm(x2, mean=mu.c3, sd=sqrt(sigma2.c3))
     y<-y1+y2+y3
 
   } else {
-    y1<-pi1*dnorm(x2, mean=mun1, sd=sqrt(sigman12))
-    y2<-pi2*dnorm(x2, mean=xi, sd=sqrt(tau2))
-    y3<-pi3*dnorm(x2, mean=mun3, sd=sqrt(sigman32))
+    y1<-pi.1*dnorm(x2, mean=mu.n1, sd=sqrt(sigma2.n1))
+    y2<-pi.2*dnorm(x2, mean=mu.2, sd=sqrt(sigma2.2))
+    y3<-pi.3*dnorm(x2, mean=mu.n3, sd=sqrt(sigma2.n3))
     y<-y1+y2+y3
   }
 

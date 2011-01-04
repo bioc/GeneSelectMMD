@@ -16,9 +16,7 @@ gsMMD(obj.eSet,
       iniGeneMethod = "Ttest", 
       transformFlag = FALSE, 
       transformMethod = "boxcox", 
-      scaleFlag = FALSE, 
-      if.center = TRUE, 
-      if.scale = TRUE, 
+      scaleFlag = TRUE, 
       criterion = c("cor", "skewness", "kurtosis"), 
       minL = -10, 
       maxL = 10, 
@@ -48,9 +46,8 @@ will be assigned to class 2 (non-differentially expressed gene group).}
   }
   \item{transformFlag}{logical. Indicate if data transformation is needed}
   \item{transformMethod}{method for transforming data. Available methods include "boxcox", "log2", "log10", "log", "none".}
-  \item{scaleFlag}{logical. Indicate if gene profiles are to be scaled. If \code{transformFlag=TRUE} and \code{scaleFlag=TRUE}, then scaling is performed after transformation.}
-  \item{if.center}{logical. If \code{scaleFlag=TRUE} and \code{if.center=TRUE}, then each gene profile will be centered to have mean zero.}
-  \item{if.scale}{logical. If \code{scaleFlag=TRUE} and \code{if.scale=TRUE}, then each gene profile will be scaled to have variance one.}
+  \item{scaleFlag}{logical. Indicate if gene profiles are to be scaled to have mean zero and variance one. If \code{transformFlag=TRUE} and \code{scaleFlag=TRUE}, then scaling is performed after transformation. To avoid linear dependence of tissue samples after scaling
+    gene profiles, we delete one tissue sample after scaling (c.f. details).}
   \item{criterion}{if \code{transformFlag=TRUE}, \code{criterion} indicates what criterion to determine if data looks like normal.  \dQuote{cor} means using Pearson's correlation. The idea is that the observed quantiles after transformation should be close to theoretical normal quantiles. So we can use Pearson's correlation to check if the scatter plot of theoretical normal quantiles versus observed quantiles is a straightline.  \dQuote{skewness} means using skewness measure to check if the distribution of the transformed data are close to normal distribution; \dQuote{kurtosis} means using kurtosis measure to check normality.}
   \item{minL}{lower limit for the \code{lambda} parameter used in Box-Cox transformation}
   \item{maxL}{upper limit for the \code{lambda} parameter used in Box-Cox transformation}
@@ -96,17 +93,55 @@ Note that genes in cluster 2 are non-differentially expressed across
 abnormal and normal tissue samples. Hence there are only 3 parameters for
 cluster 2.
 
+To make sure the identifiability, we set the following contraints: 
+\eqn{\mu_{c1}>\mu_{n1}} and \eqn{\mu_{c3}<\mu_{n3}}.
+
+To make sure the marginal covariance matrices are poisitive definite,
+we set the following contraints: 
+\eqn{-1/(n_c-1)<\rho_{c1}<1},
+\eqn{-1/(n_n-1)<\rho_{n1}<1},
+\eqn{-1/(n-1)<\rho_{2}<1},
+\eqn{-1/(n_c-1)<\rho_{c3}<1},
+\eqn{-1/(n_n-1)<\rho_{n3}<1}.
+
+We also has the following constraints for the mixing proportion:
+\eqn{\pi_3=1-\pi_1-\pi_2}, \eqn{\pi_k>0}, \eqn{k=1,2,3}.
 
 We apply the EM algorithm to estimate the model parameters. 
 We regard the cluster membership of genes as missing values.
+
+To facilitate the estimation of the parameters,
+we reparametrize the parameter vector as
+\eqn{\theta^*=(\pi_1}, \eqn{\pi_2}, 
+\eqn{\mu_{c1}}, 
+\eqn{\sigma^2_{c1}}, \eqn{r_{c1}}, \eqn{\delta_{n1}}, \eqn{\sigma^2_{n1}}, 
+\eqn{r_{n1}},
+\eqn{\mu_2}, \eqn{\sigma^2_2}, \eqn{r_2}, 
+\eqn{\mu_{c3}}, 
+\eqn{\sigma^2_{c3}}, \eqn{r_{c3}}, \eqn{\delta_{n3}}, \eqn{\sigma^2_{n3}}, 
+\eqn{r_{n3})},
+where
+\eqn{\mu_{n1}=\mu_{c1}-\exp(\delta_{n1})},
+\eqn{\mu_{n3}=\mu_{c3}+\exp(\delta_{n3})},
+\eqn{\rho_{c1}=(\exp(r_{c1})-1/(n_c-1))/(1+\exp(r_{c1}))},
+\eqn{\rho_{n1}=(\exp(r_{n1})-1/(n_n-1))/(1+\exp(r_{n1}))},
+\eqn{\rho_{2}=(\exp(r_{2})-1/(n-1))/(1+\exp(r_{2}))},
+\eqn{\rho_{c3}=(\exp(r_{c3})-1/(n_c-1))/(1+\exp(r_{c3}))},
+\eqn{\rho_{n3}=(\exp(r_{n3})-1/(n_n-1))/(1+\exp(r_{n3}))}.
+
+Given a gene, the expression levels of the gene are assumed independent. However, after scaling, the scaled expression levels of the gene are no longer independent and the rank \eqn{r^*=r-1} of the covariance matrix for the scaled gene profile will be one less than the rank \eqn{r} for the un-scaled gene profile Hence the covariance matrix of the
+gene profile will no longer be positive-definite. 
+To avoid this problem,
+we delete a tissue sample after scaling since its information has been incorrporated by other scaled tissue samples. We arbitrarily select the tissue sample, which has the biggest label number, from the tissue sample group that has larger size than the other tissue sample group. For example, if there are 6 cancer tissue samples and 10 normal tissue samples, we delete the 10-th normal tissue sample after scaling.
 }
 \value{
-A list contains 14 elements.
+A list contains 18 elements.
   \item{dat}{the (transformed) microarray data matrix. If tranformation
 performed, then \code{dat} will be different from the input 
 microarray data matrix.}
   \item{memSubjects}{the same as the input \code{memSubjects}.}
-  \item{memGenes}{a vector of cluster membership of genes. \eqn{1} means up-regulated gene; \eqn{2} means non-differentially expressed gene; \eqn{3} means down-regulated gene.}
+  \item{memGenes}{a vector of cluster membership of genes. \eqn{1} means up-regulated gene; \eqn{2} means non-differentially expressed gene; \eqn{3} 
+means down-regulated gene.}
   \item{memGenes2}{an variant of the vector of cluster membership of genes. 
 \eqn{1} means differentially expressed gene; \eqn{0} means non-differentially expressed gene.}
   \item{para}{parameter estimates (c.f. details).}
@@ -124,6 +159,10 @@ of marginal models with initial parameter estimates obtained initial gene cluste
  }
   \item{llkhVec}{a vector of values of loglikelihood function based on the mixture of marginal models with initial parameter estimates obtained initial gene cluster membership.}
   \item{lambda}{the parameter used to do Box-Cox transformation}
+  \item{paraRP}{parameter estimates for reparametrized parameter vector (c.f. details).}
+  \item{paraIniMatRP}{a matrix of parameter estimates for reparametrized parameter vector based on initial gene cluster membership.}
+  \item{paraMatRP}{a matrix of parameter estimates for reparametrized parameter vector based on the mixture
+of marginal models with initial parameter estimates obtained initial gene cluster membership.}
 }
 \references{ Qiu, W.-L., He, W., Wang, X.-G. and Lazarus, R. (2008). 
 A Marginal Mixture Model for Selecting Differentially Expressed Genes across Two Types of Tissue Samples. \emph{The International Journal of Biostatistics. 4(1):Article 20.} \url{http://www.bepress.com/ijb/vol4/iss1/20}
@@ -144,19 +183,19 @@ Ross Lazarus \email{ross.lazarus@channing.harvard.edu}
 The speed of the program is slow for large data sets.
 }
 \examples{
-  library(ALL)
-  data(ALL)
-  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
-  
-  mem.str <- as.character(eSet1$BT)
-  nSubjects <- length(mem.str)
-  memSubjects <- rep(0,nSubjects)
-  # B3 coded as 0, T2 coded as 1
-  memSubjects[mem.str == "T2"] <- 1
-  
-  obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
-    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
-  round(obj.gsMMD$para, 3)
+      library(ALL)
+      data(ALL)
+      eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+      
+      mem.str <- as.character(eSet1$BT)
+      nSubjects <- length(mem.str)
+      memSubjects <- rep(0,nSubjects)
+      # B3 coded as 0, T2 coded as 1
+      memSubjects[mem.str == "T2"] <- 1
+      
+      obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
+        transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+      round(obj.gsMMD$para, 3)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

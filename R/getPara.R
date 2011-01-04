@@ -5,7 +5,13 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
   Xlow<-X[memGenes==3,, drop=FALSE] 
   Xnon<-X[memGenes==2,, drop=FALSE]
 
-
+  nCases<-sum(memSubjects==1) # number of cases
+  nControls<-sum(memSubjects==0) # number of controls
+  nc<-nCases
+  nn<-nControls
+  nSubj<-nCases+nControls
+  n<-nSubj
+  
   n.upp<-nrow(Xupp)
   n.low<-nrow(Xlow)
   n.non<-nrow(Xnon)
@@ -50,6 +56,12 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
   rho.c3<-v.lowc.b/(v.lowc.b+v.lowc.w)
   rho.n3<-v.lown.b/(v.lown.b+v.lown.w)
 
+  r.c1<-log((1+(nCases-1)*rho.c1)/((1-rho.c1)*(nCases-1)))
+  r.n1<-log((1+(nControls-1)*rho.n1)/((1-rho.n1)*(nControls-1)))
+  r.2<-log((1+(nSubj-1)*rho.2)/((1-rho.2)*(nSubj-1)))
+  r.c3<-log((1+(nCases-1)*rho.c3)/((1-rho.c3)*(nCases-1)))
+  r.n3<-log((1+(nControls-1)*rho.n3)/((1-rho.n3)*(nControls-1)))
+
   mu.c1<-mean(apply(Xuppc, 1, mean))
   mu.n1<-mean(apply(Xuppn, 1, mean))
   sigma2.c1<-v.uppc.w
@@ -63,20 +75,68 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
   sigma2.c3<-v.lowc.w
   sigma2.n3<-v.lown.w
 
-  paraIni<-c(pi.1, pi.2, pi.3, 
-             mu.c1, sigma2.c1, rho.c1, 
-             mu.n1, sigma2.n1, rho.n1, 
-             mu.2, sigma2.2, rho.2, 
-             mu.c3, sigma2.c3, rho.c3, 
-             mu.n3, sigma2.n3, rho.n3)
-  names(paraIni)<-paraNames
-
-  mat<-t(apply(X, 1, wiFun, Psi.m=paraIni, memSubjects=memSubjects, eps=eps))
-
-  if(mu.c1<mu.n1 || mu.c3>mu.n3 )
+  if(mu.c1<=mu.n1 || mu.c3>=mu.n3 )
   { llkh<- -Inf }
   else { 
-    llkh<-QFunc(paraIni, X, mat[,1:3], memSubjects, memGenes, eps=eps)
+    delta.n1<-log(mu.c1-mu.n1)
+    delta.n3<-log(mu.n3-mu.c3)
+    paraIni<-c(pi.1, pi.2, 
+               mu.c1, log(sigma2.c1), r.c1, 
+               delta.n1, log(sigma2.n1), r.n1, 
+               mu.2, log(sigma2.2), r.2, 
+               mu.c3, log(sigma2.c3), r.c3, 
+               delta.n3, log(sigma2.n3), r.n3)
+    names(paraIni)<-paraNamesRP
+  
+    mat<-t(apply(X, 1, wiFun, Psi.m=paraIni, memSubjects=memSubjects, eps=eps))
+
+    w1<-as.numeric(mat[,1])
+    w2<-as.numeric(mat[,2])
+    w3<-as.numeric(mat[,3])
+    xcMat<-X[,memSubjects==1,drop=FALSE]
+    xnMat<-X[,memSubjects==0,drop=FALSE]
+ 
+    xcTxc<-apply(xcMat, 1, function(x) {sum(x^2)})
+    xcT1<-apply(xcMat, 1, function(x) {sum(x)})
+ 
+    xnTxn<-apply(xnMat, 1, function(x) {sum(x^2)})
+    xnT1<-apply(xnMat, 1, function(x) {sum(x)})
+ 
+    xTx<-apply(X, 1, function(x) {sum(x^2)})
+    xT1<-apply(X, 1, function(x) {sum(x)})
+
+    sumw1<-mean(mat[,1])
+    sumw2<-mean(mat[,2])
+    sumw3<-mean(mat[,3])
+ 
+    sumw1xcTxc<-sum(w1*xcTxc)
+    sumw1xcT1<-sum(w1*xcT1)
+    sumw1xcT1.sq<-sum(w1*xcT1^2)
+  
+    sumw1xnTxn<-sum(w1*xnTxn)
+    sumw1xnT1<-sum(w1*xnT1)
+    sumw1xnT1.sq<-sum(w1*xnT1^2)
+  
+    sumw2xTx<-sum(w2*xTx)
+    sumw2xT1<-sum(w2*xT1)
+    sumw2xT1.sq<-sum(w2*xT1^2)
+  
+    sumw3xcTxc<-sum(w3*xcTxc)
+    sumw3xcT1<-sum(w3*xcT1)
+    sumw3xcT1.sq<-sum(w3*xcT1^2)
+  
+    sumw3xnTxn<-sum(w3*xnTxn)
+    sumw3xnT1<-sum(w3*xnT1)
+    sumw3xnT1.sq<-sum(w3*xnT1^2)
+  
+    llkh<- -negQFunc(paraIni, X, nc, nn, n,
+      xcMat, xnMat, xcTxc, xnTxn, xTx, xT1,
+      sumw1, sumw2, sumw3, 
+      sumw1xcTxc, sumw1xcT1, sumw1xcT1.sq,
+      sumw1xnTxn, sumw1xnT1, sumw1xnT1.sq,
+      sumw2xTx, sumw2xT1, sumw2xT1.sq,
+      sumw3xcTxc, sumw3xcT1, sumw3xcT1.sq,
+      sumw3xnTxn, sumw3xnT1, sumw3xnT1.sq)
   }
 
   return(list(para=paraIni, llkh=llkh))

@@ -39,18 +39,20 @@ Xiaogang Wang \email{stevenw@mathstat.yorku.ca},
 Ross Lazarus \email{ross.lazarus@channing.harvard.edu}
 }
 \examples{
-  library(ALL)
-  data(ALL)
-  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
-  
-  mem.str <- as.character(eSet1$BT)
-  nSubjects <- length(mem.str)
-  memSubjects <- rep(0,nSubjects)
-  # B3 coded as 0, T2 coded as 1
-  memSubjects[mem.str == "T2"] <- 1
-  
-  obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
-    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
-  round(errRates(obj.gsMMD), 3)
+  \dontrun{
+    library(ALL)
+    data(ALL)
+    eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+    
+    mem.str <- as.character(eSet1$BT)
+    nSubjects <- length(mem.str)
+    memSubjects <- rep(0,nSubjects)
+    # B3 coded as 0, T2 coded as 1
+    memSubjects[mem.str == "T2"] <- 1
+    
+    obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
+      transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+    round(errRates(obj.gsMMD), 3)
+  }
 }
 \keyword{classif }% at least one, from doc/KEYWORDS

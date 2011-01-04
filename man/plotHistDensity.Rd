@@ -80,25 +80,27 @@ assumption that the marginal correlation among
 subjects is zero. If the estimated marginal correlation obtained by \code{gsMMD} is far from zero, then do not use this plot function. 
 }
 \examples{
-  library(ALL)
-  data(ALL)
-  eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+  \dontrun{
+    library(ALL)
+    data(ALL)
+    eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+    
+    mem.str <- as.character(eSet1$BT)
+    nSubjects <- length(mem.str)
+    memSubjects <- rep(0,nSubjects)
+    # B3 coded as 0 (control), T2 coded as 1 (case)
+    memSubjects[mem.str == "T2"] <- 1
+    
+    obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
+      transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
   
-  mem.str <- as.character(eSet1$BT)
-  nSubjects <- length(mem.str)
-  memSubjects <- rep(0,nSubjects)
-  # B3 coded as 0 (control), T2 coded as 1 (case)
-  memSubjects[mem.str == "T2"] <- 1
-  
-  obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
-    transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
-
-  plotHistDensity(obj.gsMMD, plotFlag = "case", 
-      mytitle = "Histogram of gene expression levels for T2\nimposed with estimated density (case)", 
-      plotComponent = TRUE, 
-      x.legend = c(0.8, 3), 
-      y.legend = c(0.3, 0.4), 
-      numPoints = 500)
+    plotHistDensity(obj.gsMMD, plotFlag = "case", 
+        mytitle = "Histogram of gene expression levels for T2\nimposed with estimated density (case)", 
+        plotComponent = TRUE, 
+        x.legend = c(0.8, 3), 
+        y.legend = c(0.3, 0.4), 
+        numPoints = 500)
+  }
 
 }
 \keyword{classif }% at least one, from doc/KEYWORDS

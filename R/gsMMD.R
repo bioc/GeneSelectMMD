@@ -1,13 +1,22 @@
 # define some constant
 PI<-3.1415926
-TNumPara<-(18)
-BigNum<-(1.0e+10)
-paraNames<- c("pi.1", "pi.2", "pi.3", 
+TNumPara<-18
+paraNames<- c("pi.1", "pi.2", "pi.3",
               "mu.c1", "sigma2.c1", "rho.c1", 
               "mu.n1", "sigma2.n1", "rho.n1",
               "mu.2", "sigma2.2", "rho.2",
               "mu.c3", "sigma2.c3", "rho.c3", 
               "mu.n3", "sigma2.n3", "rho.n3")
+
+# re-parametrization
+TNumParaRP<-17
+paraNamesRP<- c("pi.1", "pi.2", 
+              "mu.c1", "tau.c1", "r.c1", 
+              "delta.n1", "tau.n1", "r.n1",
+              "mu.2", "tau.2", "r.2",
+              "mu.c3", "tau.c3", "r.c3", 
+              "delta.n3", "tau.n3", "r.n3")
+
 
 "gsMMD"<-
 function(obj.eSet, 
@@ -19,9 +28,7 @@ function(obj.eSet,
          iniGeneMethod= "Ttest", 
          transformFlag=FALSE, 
          transformMethod="boxcox", 
-         scaleFlag=FALSE, 
-         if.center=TRUE, 
-         if.scale=TRUE,
+         scaleFlag=TRUE, 
          criterion=c("cor", "skewness", "kurtosis"),
          minL=-10, 
          maxL=10, 
@@ -44,8 +51,6 @@ function(obj.eSet,
          transformFlag,
          transformMethod,
          scaleFlag,
-         if.center,
-         if.scale,
          criterion,
          minL,
          maxL,
@@ -70,9 +75,7 @@ function(X,
          iniGeneMethod= "Ttest", 
          transformFlag=FALSE, 
          transformMethod="boxcox", 
-         scaleFlag=FALSE, 
-         if.center=TRUE, 
-         if.scale=TRUE,
+         scaleFlag=TRUE, 
          criterion=c("cor", "skewness", "kurtosis"),
          minL=-10, 
          maxL=10, 
@@ -92,9 +95,12 @@ function(X,
    stop(msg)
   }
 
+  X<-as.matrix(X)
   nGenes<-nrow(X)
   nSubjects<-ncol(X)
   nMethods<-length(iniGeneMethod)
+  nCases<-sum(memSubjects==1)
+  nControls<-sum(memSubjects==0)
 
   if(sum(is.null(geneNames)))
   { geneNames<-paste("gene", 1:nGenes, sep="") }
@@ -103,6 +109,22 @@ function(X,
   lambda<-NA
   if(transformFlag)
   { 
+    if(transformMethod!="none")
+    {
+      vec<-as.numeric(X)
+      min.vec<-min(vec)
+      if(min.vec<0)
+      {
+        cat("****** Begin Warning ******** \n")
+        cat("Warning: Data contains non-positive values! To continue ",
+          transformMethod, " transformation,\n")
+        cat("We first perform the following transformation:\n")
+        cat("x<-x+abs(min(x))+1\n")
+        cat("****** End Warning ******** \n")
+    
+        X<-X+abs(min.vec)+1
+      }
+    }
     tmp<-transFunc(X, transformMethod, criterion, 
                    minL, maxL, stepL, eps, plotFlag, ITMAX=0) 
     if(transformMethod=="boxcox")
@@ -120,11 +142,34 @@ function(X,
   {
     if(!quiet)
     { cat("Gene profiles are scaled so that they have mean zero and variance one!\n") }
-    X<-t(apply(X, 1, scale, center=if.center, scale=if.scale))
+    X<-t(apply(X, 1, scale, center=TRUE, scale=TRUE))
+
+    # to avoid linear dependence of tissue samples after scaling
+    # gene profiles, we delete a tissue sample.
+    # We arbitrarily select the tissue sample, which has the biggest label number, 
+    # from the tissue sample group that has larger size than the other 
+    # tissue sample group. For example, if there are 6 cancer tissue samples 
+    # and 10 normal tissue samples, we delete the 10-th normal tissue sample after scaling.
+
+    if(nCases>nControls)
+    { 
+      pos<-which(memSubjects==1)
+      pos2<-pos[nCases]
+      X<-X[,-pos2]
+      memSubjects<-memSubjects[-pos2]
+    } else {
+      pos<-which(memSubjects==0)
+      pos2<-pos[nControls]
+      X<-X[,-pos2]
+      memSubjects<-memSubjects[-pos2]
+    }
+    nCases<-sum(memSubjects==1)
+    nControls<-sum(memSubjects==0)
+    nSubjects<-nCases+nControls
   }
 
   # records initial parameter estimates
-  paraIniMat<-matrix(0, nrow=TNumPara, ncol=nMethods)
+  paraIniMatRP<-matrix(0, nrow=TNumParaRP, ncol=nMethods)
   # records initial gene-membership estimates
   memIniMat<-matrix(0, nrow=nGenes, ncol=nMethods)
 
@@ -132,7 +177,7 @@ function(X,
   llkhIniVec<-rep(0, nMethods)
 
   # records parameter estimates
-  paraMat<-matrix(0, nrow=TNumPara, ncol=nMethods)
+  paraMatRP<-matrix(0, nrow=TNumParaRP, ncol=nMethods)
   # records gene-membership estimates
   memMat<-matrix(0, nrow=nGenes, ncol=nMethods)
 
@@ -151,40 +196,40 @@ function(X,
                               iniGeneMethod[i], alpha, eps=eps)
     iniGeneMethod[i]<-tmpIni$iniGeneMethod
     memIniMat[,i]<-tmpIni$memGenes
-    paraIniMat[,i]<-tmpIni$para
+    paraIniMatRP[,i]<-tmpIni$para
     llkhIniVec[i]<-tmpIni$llkh
-    ttt<-paraIniMat[,i]
-    names(ttt)<-paraNames
+    ttt<-paraIniMatRP[,i]
+    names(ttt)<-paraNamesRP
     if(!quiet)
-    { cat("paraIniMat[,i]>>\n"); print(round(ttt,3)); cat("\n"); }
+    { cat("paraIniMatRP[,i]>>\n"); print(round(ttt,3)); cat("\n"); }
 
     # Gene Selection based on EM algorithm
-    res<- paraEst(X, paraIniMat[,i], memSubjects=memSubjects, 
+    res<- paraEst(X, tmpIni$para, memSubjects=memSubjects, 
                    maxFlag=maxFlag, thrshPostProb, geneNames=geneNames,
-                   ITMAX=ITMAX, eps=eps)
+                   ITMAX=ITMAX, eps=eps, quiet=quiet)
 
     if(res$loop==0)
     {
-      paraMat[,i]<-paraIniMat[,i]
+      paraMatRP[,i]<-paraIniMatRP[,i]
       llkhVec[i]<-llkhIniVec[i]
       memMat[,i]<-memIniMat[,i]
-      wiArray[,,i]<-res$wiMat
+      wiArray[,,i]<-res$memMat
     } else {
-      paraMat[,i]<-res$para
+      paraMatRP[,i]<-res$para
       llkhVec[i]<-res$llkh
       memMat[,i]<-res$memGenes
-      wiArray[,,i]<-res$wiMat
+      wiArray[,,i]<-res$memMat
     }
   }
-  rownames(paraIniMat)<-paraNames
-  colnames(paraIniMat)<-iniGeneMethod
+  rownames(paraIniMatRP)<-paraNamesRP
+  colnames(paraIniMatRP)<-iniGeneMethod
 
   rownames(memIniMat)<-geneNames
   colnames(memIniMat)<-iniGeneMethod
   names(llkhIniVec)<-iniGeneMethod
-  rownames(paraMat)<-paraNames
+  rownames(paraMatRP)<-paraNamesRP
 
-  colnames(paraMat)<-iniGeneMethod
+  colnames(paraMatRP)<-iniGeneMethod
   rownames(memMat)<-geneNames
   colnames(memMat)<-iniGeneMethod
   names(llkhVec)<-iniGeneMethod
@@ -195,8 +240,18 @@ function(X,
 
   # final results
   flagPi<-rep(0, nMethods)
+  paraIniMat<-matrix(0, nrow=TNumPara, ncol=nMethods)
+  rownames(paraIniMat)<-paraNames
+  colnames(paraIniMat)<-iniGeneMethod
+
+  paraMat<-matrix(0, nrow=TNumPara, ncol=nMethods)
+  rownames(paraMat)<-paraNames
+  colnames(paraMat)<-iniGeneMethod
+
   for(i in 1:nMethods)
   { 
+    paraIniMat[,i]<-paraRPConverter(paraIniMatRP[,i], nCases, nControls)
+    paraMat[,i]<-paraRPConverter(paraMatRP[,i], nCases, nControls)
     flagPi[i]<-sum(paraMat[2,i]>paraMat[1,i] & paraMat[2,i]>paraMat[3,i])
   }
   tmppos<-which(flagPi==0)
@@ -211,6 +266,7 @@ function(X,
 
   memGenes<-as.vector(memMat[,pos])
   para<-paraMat[,pos]
+  paraRP<-paraMatRP[,pos]
   llkh<-llkhVec[pos]
   wiMat<-wiArray[,,pos]
 
@@ -221,13 +277,21 @@ function(X,
   { cat("*******************************************************\n\n") 
     cat("Initial parameter estimates>>\n"); print(round(paraIniMat,3)); cat("\n");
     cat("Initial loglikelihood>>\n"); print(round(llkhIniVec,3)); cat("\n");
-    cat("Final parameter estimates based on initial estimates>>\n"); print(round(paraMat,3)); cat("\n");
+    #tmpMat<-matrix(0, nrow=TNumPara, ncol=nMethods)
+    #rownames(tmpMat)<-rownames(paraMat)
+    #colnames(tmpMat)<-colnames(paraMat)
+    #for(i in 1:nMethods)
+    #{
+    #  #tmpMat[,i]<-paraMat[[i]][,1]
+    #  tmpMat[,i]<-paraMat[,1]
+    #}
+    #cat("Final parameter estimates based on initial estimates>>\n"); print(round(tmpMat,3)); cat("\n");
     cat("Final loglikelihood based on initial estimates>>\n"); print(round(llkhVec,3)); cat("\n");
     cat("Final parameter estimates>>\n"); print(round(para,3)); cat("\n");
     cat("Final loglikelihood>>\n"); print(round(llkh,3)); cat("\n");
     cat("*******************************************************\n\n")
   }
-  
+
   res<-list(dat=X, memSubjects=memSubjects, 
             memGenes=memGenes, memGenes2=memGenes2, 
             para=para, 
@@ -247,7 +311,7 @@ getIniMemGenes<-function(X, memSubjects, geneNames, iniGeneMethod="Ttest",
     # (1) two-sample t-test
     tmp<-iniMemGenesTestFunc(X, memSubjects=memSubjects, testFun=myTtest, 
                         geneNames=geneNames, alpha = alpha, eps=eps)
-  } else { #if(iniGeneMethod=="Wilcox"){
+  } else { #iniGeneMethod=="Wilcox"
     # (2) two-sample wilcoxon test
     tmp<-iniMemGenesTestFunc(X, memSubjects=memSubjects, testFun=myWilcox, 
                         geneNames=geneNames, alpha = alpha, eps=eps)
@@ -257,4 +321,75 @@ getIniMemGenes<-function(X, memSubjects, geneNames, iniGeneMethod="Ttest",
             memGenes2=tmp$memGenes2, iniGeneMethod=iniGeneMethod)
   return(res)
 }
+
+paraRPConverter<-function(paraRP, nCases, nControls)
+{
+  nc<-nCases
+  nn<-nControls
+  n<-nc+nn
+
+  # mixture proportions
+  pi.1<-paraRP[1]; pi.2<-paraRP[2]; 
+  pi.3<-1-pi.1-pi.2
+
+  # mean expression level for cluster 1 for diseased subjects
+  mu.c1<-paraRP[3]; 
+  # variance of expression levels for cluster 1 for diseased subjects
+  tau.c1<-paraRP[4]; 
+  sigma2.c1<-exp(tau.c1)
+  # modified logit of correlation among expression levels for cluster 1 for diseased subjects
+  r.c1<-paraRP[5]; 
+  rho.c1<-(exp(r.c1)-1/(nc-1))/(1+exp(r.c1))
+
+  # mean expression level for cluster 1 for normal subjects
+  delta.n1<-paraRP[6]; 
+  mu.n1<-mu.c1-exp(delta.n1)
+  # variance of expression levels for cluster 1 for normal subjects
+  tau.n1<-paraRP[7]; 
+  sigma2.n1<-exp(tau.n1)
+  # modified logit of correlation among expression levels for cluster 1 for normal subjects
+  r.n1<-paraRP[8]; 
+  rho.n1<-(exp(r.n1)-1/(nn-1))/(1+exp(r.n1))
+
+  # mean expression level for cluster 2
+  mu.2<-paraRP[9]; 
+  # variance of expression levels for cluster 2
+  tau.2<-paraRP[10]; 
+  sigma2.2<-exp(tau.2)
+  # modified logit of correlation among expression levels for cluster 2
+  r.2<-paraRP[11]; 
+  rho.2<-(exp(r.2)-1/(n-1))/(1+exp(r.2))
+
+  # mean expression level for cluster 3 for diseased subjects
+  mu.c3<-paraRP[12]; 
+  # variance of expression levels for cluster 3 for diseased subjects
+  tau.c3<-paraRP[13]; 
+  sigma2.c3<-exp(tau.c3)
+  # modified logit of correlation among expression levels for cluster 3 for diseased subjects
+  r.c3<-paraRP[14]; 
+  rho.c3<-(exp(r.c3)-1/(nc-1))/(1+exp(r.c3))
+
+  # mean expression level for cluster 3 for normal subjects
+  delta.n3<-paraRP[15]; 
+  mu.n3<-mu.c3+exp(delta.n3)
+  # variance of expression levels for cluster 3 for normal subjects
+  tau.n3<-paraRP[16]; 
+  sigma2.n3<-exp(tau.n3)
+  # modified logit of correlation among expression levels for cluster 3 for normal subjects
+  r.n3<-paraRP[17]; 
+  rho.n3<-(exp(r.n3)-1/(nn-1))/(1+exp(r.n3))
+
+  ##############################
+  para<-c(pi.1, pi.2, pi.3,
+               mu.c1, sigma2.c1, rho.c1,
+               mu.n1, sigma2.n1, rho.n1,
+               mu.2, sigma2.2, rho.2,
+               mu.c3, sigma2.c3, rho.c3,
+               mu.n3, sigma2.n3, rho.n3
+  )
+  names(para)<-paraNames
+
+  return(para)
+}
+
 

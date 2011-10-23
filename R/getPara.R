@@ -5,8 +5,8 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
   Xlow<-X[memGenes==3,, drop=FALSE] 
   Xnon<-X[memGenes==2,, drop=FALSE]
 
-  nCases<-sum(memSubjects==1) # number of cases
-  nControls<-sum(memSubjects==0) # number of controls
+  nCases<-sum(memSubjects==1, na.rm=TRUE) # number of cases
+  nControls<-sum(memSubjects==0, na.rm=TRUE) # number of controls
   nc<-nCases
   nn<-nControls
   nSubj<-nCases+nControls
@@ -32,22 +32,22 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
 
 
   # within gene variation
-  v.uppc.w<-mean(apply(Xuppc, 1, var))
-  v.uppn.w<-mean(apply(Xuppn, 1, var))
+  v.uppc.w<-mean(apply(Xuppc, 1, var, na.rm=TRUE), na.rm=TRUE)
+  v.uppn.w<-mean(apply(Xuppn, 1, var, na.rm=TRUE), na.rm=TRUE)
 
-  v.non.w<-mean(apply(Xnon, 1, var))
+  v.non.w<-mean(apply(Xnon, 1, var, na.rm=TRUE), na.rm=TRUE)
 
-  v.lowc.w<-mean(apply(Xlowc, 1, var))
-  v.lown.w<-mean(apply(Xlown, 1, var))
+  v.lowc.w<-mean(apply(Xlowc, 1, var, na.rm=TRUE), na.rm=TRUE)
+  v.lown.w<-mean(apply(Xlown, 1, var, na.rm=TRUE), na.rm=TRUE)
 
   # between gene variation
-  v.uppc.b<-var(apply(Xuppc, 1, mean))
-  v.uppn.b<-var(apply(Xuppn, 1, mean))
+  v.uppc.b<-var(apply(Xuppc, 1, mean, na.rm=TRUE), na.rm=TRUE)
+  v.uppn.b<-var(apply(Xuppn, 1, mean, na.rm=TRUE), na.rm=TRUE)
 
-  v.non.b<-var(apply(Xnon, 1, mean))
+  v.non.b<-var(apply(Xnon, 1, mean, na.rm=TRUE), na.rm=TRUE)
 
-  v.lowc.b<-var(apply(Xlowc, 1, mean))
-  v.lown.b<-var(apply(Xlown, 1, mean))
+  v.lowc.b<-var(apply(Xlowc, 1, mean, na.rm=TRUE), na.rm=TRUE)
+  v.lown.b<-var(apply(Xlown, 1, mean, na.rm=TRUE), na.rm=TRUE)
 
   # marginal correlation
   rho.c1<-v.uppc.b/(v.uppc.b+v.uppc.w)
@@ -62,16 +62,16 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
   r.c3<-log((1+(nCases-1)*rho.c3)/((1-rho.c3)*(nCases-1)))
   r.n3<-log((1+(nControls-1)*rho.n3)/((1-rho.n3)*(nControls-1)))
 
-  mu.c1<-mean(apply(Xuppc, 1, mean))
-  mu.n1<-mean(apply(Xuppn, 1, mean))
+  mu.c1<-mean(apply(Xuppc, 1, mean, na.rm=TRUE), na.rm=TRUE)
+  mu.n1<-mean(apply(Xuppn, 1, mean, na.rm=TRUE), na.rm=TRUE)
   sigma2.c1<-v.uppc.w
   sigma2.n1<-v.uppn.w
 
-  mu.2<-mean(apply(Xnon, 1, mean))
+  mu.2<-mean(apply(Xnon, 1, mean, na.rm=TRUE), na.rm=TRUE)
   sigma2.2<-v.non.w
 
-  mu.c3<-mean(apply(Xlowc, 1, mean))
-  mu.n3<-mean(apply(Xlown, 1, mean))
+  mu.c3<-mean(apply(Xlowc, 1, mean, na.rm=TRUE), na.rm=TRUE)
+  mu.n3<-mean(apply(Xlown, 1, mean, na.rm=TRUE), na.rm=TRUE)
   sigma2.c3<-v.lowc.w
   sigma2.n3<-v.lown.w
 
@@ -96,38 +96,38 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
     xcMat<-X[,memSubjects==1,drop=FALSE]
     xnMat<-X[,memSubjects==0,drop=FALSE]
  
-    xcTxc<-apply(xcMat, 1, function(x) {sum(x^2)})
-    xcT1<-apply(xcMat, 1, function(x) {sum(x)})
+    xcTxc<-apply(xcMat, 1, function(x) {sum(x^2, na.rm=TRUE)})
+    xcT1<-apply(xcMat, 1, function(x) {sum(x, na.rm=TRUE)})
  
-    xnTxn<-apply(xnMat, 1, function(x) {sum(x^2)})
-    xnT1<-apply(xnMat, 1, function(x) {sum(x)})
+    xnTxn<-apply(xnMat, 1, function(x) {sum(x^2, na.rm=TRUE)})
+    xnT1<-apply(xnMat, 1, function(x) {sum(x, na.rm=TRUE)})
  
-    xTx<-apply(X, 1, function(x) {sum(x^2)})
-    xT1<-apply(X, 1, function(x) {sum(x)})
+    xTx<-apply(X, 1, function(x) {sum(x^2, na.rm=TRUE)})
+    xT1<-apply(X, 1, function(x) {sum(x, na.rm=TRUE)})
 
-    sumw1<-mean(mat[,1])
-    sumw2<-mean(mat[,2])
-    sumw3<-mean(mat[,3])
+    sumw1<-mean(mat[,1], na.rm=TRUE)
+    sumw2<-mean(mat[,2], na.rm=TRUE)
+    sumw3<-mean(mat[,3], na.rm=TRUE)
  
-    sumw1xcTxc<-sum(w1*xcTxc)
-    sumw1xcT1<-sum(w1*xcT1)
-    sumw1xcT1.sq<-sum(w1*xcT1^2)
+    sumw1xcTxc<-sum(w1*xcTxc, na.rm=TRUE)
+    sumw1xcT1<-sum(w1*xcT1, na.rm=TRUE)
+    sumw1xcT1.sq<-sum(w1*xcT1^2, na.rm=TRUE)
   
-    sumw1xnTxn<-sum(w1*xnTxn)
-    sumw1xnT1<-sum(w1*xnT1)
-    sumw1xnT1.sq<-sum(w1*xnT1^2)
+    sumw1xnTxn<-sum(w1*xnTxn, na.rm=TRUE)
+    sumw1xnT1<-sum(w1*xnT1, na.rm=TRUE)
+    sumw1xnT1.sq<-sum(w1*xnT1^2, na.rm=TRUE)
   
-    sumw2xTx<-sum(w2*xTx)
-    sumw2xT1<-sum(w2*xT1)
-    sumw2xT1.sq<-sum(w2*xT1^2)
+    sumw2xTx<-sum(w2*xTx, na.rm=TRUE)
+    sumw2xT1<-sum(w2*xT1, na.rm=TRUE)
+    sumw2xT1.sq<-sum(w2*xT1^2, na.rm=TRUE)
   
-    sumw3xcTxc<-sum(w3*xcTxc)
-    sumw3xcT1<-sum(w3*xcT1)
-    sumw3xcT1.sq<-sum(w3*xcT1^2)
+    sumw3xcTxc<-sum(w3*xcTxc, na.rm=TRUE)
+    sumw3xcT1<-sum(w3*xcT1, na.rm=TRUE)
+    sumw3xcT1.sq<-sum(w3*xcT1^2, na.rm=TRUE)
   
-    sumw3xnTxn<-sum(w3*xnTxn)
-    sumw3xnT1<-sum(w3*xnT1)
-    sumw3xnT1.sq<-sum(w3*xnT1^2)
+    sumw3xnTxn<-sum(w3*xnTxn, na.rm=TRUE)
+    sumw3xnT1<-sum(w3*xnT1, na.rm=TRUE)
+    sumw3xnT1.sq<-sum(w3*xnT1^2, na.rm=TRUE)
   
     llkh<- -negQFunc(paraIni, X, nc, nn, n,
       xcMat, xnMat, xcTxc, xnTxn, xTx, xT1,

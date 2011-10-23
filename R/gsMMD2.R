@@ -72,10 +72,10 @@ function(X,
   X<-as.matrix(X)
   nGenes<-nrow(X)
   nSubjects<-ncol(X)
-  nCases<-sum(memSubjects==1)
-  nControls<-sum(memSubjects==0)
+  nCases<-sum(memSubjects==1, na.rm=TRUE)
+  nControls<-sum(memSubjects==0, na.rm=TRUE)
 
-  if(sum(is.null(geneNames)))
+  if(sum(is.null(geneNames), na.rm=TRUE))
   { geneNames<-paste("gene", 1:nGenes, sep="") }
 
   cat("Programming is running. Please be patient...\n")
@@ -85,14 +85,14 @@ function(X,
     if(transformMethod!="none")
     {
       vec<-as.numeric(X)
-      min.vec<-min(vec)
+      min.vec<-min(vec, na.rm=TRUE)
       if(min.vec<0)
       {
         cat("****** Begin Warning ******** \n")
         cat("Warning: Data contains non-positive values! To continue ",
            transformMethod, " transformation,\n")
         cat("We first perform the following transformation:\n")
-        cat("x<-x+abs(min(x))+1\n")
+        cat("x<-x+abs(min(x, na.rm=TRUE))+1\n")
         cat("****** End Warning ******** \n")
     
         X<-X+abs(min.vec)+1
@@ -136,8 +136,8 @@ function(X,
       X<-X[,-pos2]
       memSubjects<-memSubjects[-pos2]
     }
-    nCases<-sum(memSubjects==1)
-    nControls<-sum(memSubjects==0)
+    nCases<-sum(memSubjects==1, na.rm=TRUE)
+    nControls<-sum(memSubjects==0, na.rm=TRUE)
     nSubjects<-nCases+nControls
   }
 

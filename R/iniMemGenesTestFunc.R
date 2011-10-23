@@ -29,7 +29,7 @@ function(X,
     mat3.p<-mat3[mat3[,3]>0,]
     mat3.n<-mat3[mat3[,3]<0,]
     tmpn<-ceiling(nGenes/5)
-    tmpn<-min(max(tmpn, 2), floor(nGenes/3))
+    tmpn<-min(max(tmpn, 2, na.rm=TRUE), floor(nGenes/3), na.rm=TRUE)
     posUpp<-mat3.p[1:tmpn,1]
     posLow<-mat3.n[1:tmpn,1]
   }
@@ -41,7 +41,7 @@ function(X,
   memGenes2<-rep(1, nGenes)
   memGenes2[memGenes==2]<-0
 
-  if(sum(is.null(geneNames)))
+  if(sum(is.null(geneNames), na.rm=TRUE))
   { geneNames<-paste("gene", 1:nGenes, sep="") }
 
   names(memGenes)<-geneNames

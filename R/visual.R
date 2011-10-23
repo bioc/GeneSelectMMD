@@ -1,3 +1,6 @@
+# modified on Sept. 28, 2011
+#  (1) added 'na.rm=TRUE' to function 'sum'
+#
 # v0.1.2
 #  (1) obj.gsMMD is changed to contain 'memSubjects'
 #  (2) fixed a bug relating to the 'ylim' of the plot.
@@ -22,8 +25,8 @@ plotHistDensity<-function(obj.gsMMD,
   names(para)<-paraNames
   memSubjects<-obj.gsMMD$memSubjects
 
-  nCases<-sum(memSubjects==1)
-  nControls<-sum(memSubjects==0)
+  nCases<-sum(memSubjects==1, na.rm=TRUE)
+  nControls<-sum(memSubjects==0, na.rm=TRUE)
   n<-nCases+nControls
 
   pi.1<-para[1]
@@ -74,7 +77,7 @@ plotHistDensity<-function(obj.gsMMD,
   }
 
   tmp<-hist(x, plot=FALSE)
-  myylim<-range(c(y, tmp$density))
+  myylim<-range(c(y, tmp$density), na.rm=TRUE)
   hist(x, freq=FALSE, main=mytitle,xlab=myxlab, ylab=myylab, ylim=myylim,
     cex.main=cex.main, cex.lab=cex.lab)
   lines(x2, y, col=mycol[1], lty=mylty[1], lwd=mylwd[1])
@@ -87,15 +90,15 @@ plotHistDensity<-function(obj.gsMMD,
   }
   if(is.null(x.legend))
   {
-    x.max<-max(x)
-    d<-max(x)-min(x)
+    x.max<-max(x, na.rm=TRUE)
+    d<-max(x, na.rm=TRUE)-min(x, na.rm=TRUE)
     tmp1<-x.max-d/3
     x.legend<-c(tmp1, x.max)
   }
   if(is.null(y.legend))
   {
-    y.max<-max(y)
-    d<-max(y)-min(y)
+    y.max<-max(y, na.rm=TRUE)
+    d<-max(y, na.rm=TRUE)-min(y, na.rm=TRUE)
     tmp1<-y.max-d/4
     y.legend<-c(tmp1, y.max)
 

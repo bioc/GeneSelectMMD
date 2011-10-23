@@ -20,3 +20,5 @@ plotHistDensity		Plot of histogram of pooled gene expression levels,
 			estimate is based on the assumption that the 
 			marginal correlations between subjects
 			are zero.
+obtainResi		Replace expression levels by the residuals of 
+			regression analysis to remove the confounding effects.

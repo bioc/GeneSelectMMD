@@ -1,13 +1,14 @@
 Package: GeneSelectMMD
 Type: Package
 Title: Gene selection based on the marginal distributions of gene profiles that characterized by a mixture of three-component multivariate distributions
-Version: 1.9.0
-Date: 2011-01-03
+Version: 1.9.4
+Date: 2011-10-23
 Author: Weiliang Qiu <stwxq@channing.harvard.edu>, Wenqing He <whe@stats.uwo.ca>, Xiaogang Wang <stevenw@mathstat.yorku.ca>, Ross Lazarus <ross.lazarus@channing.harvard.edu>.
 Maintainer: Weiliang Qiu <stwxq@channing.harvard.edu>
-Depends: R (>= 2.9.0), Biobase
-Imports: Biobase, MASS, graphics, stats, survival 
+Depends: R (>= 2.13.2), Biobase
+Imports: Biobase, MASS, graphics, stats, survival, limma 
 Suggests: ALL
 biocViews: Bioinformatics, DifferentialExpression
 Description: Gene selection based on a mixture of marginal distributions
 License: GPL (>= 2)
+Packaged: 2011-04-14 17:06:04 UTC; biocbuild

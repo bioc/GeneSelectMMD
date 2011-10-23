@@ -4,7 +4,8 @@ export(
   gsMMD2,
   gsMMD2.default,
   errRates,
-  plotHistDensity
+  plotHistDensity,
+  obtainResi
 )
 
 importMethodsFrom(Biobase,
@@ -27,6 +28,11 @@ importFrom(stats,
           sd,
           t.test,
           var,
-          wilcox.test)
+          wilcox.test,
+          model.matrix)
+
+importFrom(limma,
+          lmFit,
+          eBayes)
 
 

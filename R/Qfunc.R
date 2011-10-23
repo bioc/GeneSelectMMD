@@ -1,3 +1,6 @@
+# modified on Sept. 28, 2011
+#  (1) added 'na.rm=TRUE' to function 'sum'
+#
 # sum_{i=1}^{nGenes} log10(pi.1*f1(xi)+pi.2*f2(xi)+pi.3*f3(xi))
 
 # negative of the M-step's objective function - the part relating to pi's

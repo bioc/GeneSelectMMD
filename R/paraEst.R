@@ -20,12 +20,12 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
   # check if parameters are in appropriate ranges
   checkPara(paraIni, eps)
 
-  sumb<-sum(const.b.vec)
+  sumb<-sum(const.b.vec, na.rm=TRUE)
   const.b1.b2<-c(const.b1, const.b2)
 
   n<-ncol(X) # number of patients/subjects
-  nc<-sum(memSubjects==1)  # number of cases
-  nn<-sum(memSubjects==0)  # number of controls
+  nc<-sum(memSubjects==1, na.rm=TRUE)  # number of cases
+  nn<-sum(memSubjects==0, na.rm=TRUE)  # number of controls
   if(nc>=n){
     stop("Number of cases >= Total number of patients!\n")
   }
@@ -43,14 +43,14 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
   xcMat<-X[,memSubjects==1,drop=FALSE]
   xnMat<-X[,memSubjects==0,drop=FALSE]
 
-  xcTxc<-apply(xcMat, 1, function(x) {sum(x^2)})
-  xcT1<-apply(xcMat, 1, function(x) {sum(x)})
+  xcTxc<-apply(xcMat, 1, function(x) {sum(x^2, na.rm=TRUE)})
+  xcT1<-apply(xcMat, 1, function(x) {sum(x, na.rm=TRUE)})
 
-  xnTxn<-apply(xnMat, 1, function(x) {sum(x^2)})
-  xnT1<-apply(xnMat, 1, function(x) {sum(x)})
+  xnTxn<-apply(xnMat, 1, function(x) {sum(x^2, na.rm=TRUE)})
+  xnT1<-apply(xnMat, 1, function(x) {sum(x, na.rm=TRUE)})
 
-  xTx<-apply(X, 1, function(x) {sum(x^2)})
-  xT1<-apply(X, 1, function(x) {sum(x)})
+  xTx<-apply(X, 1, function(x) {sum(x^2, na.rm=TRUE)})
+  xT1<-apply(X, 1, function(x) {sum(x, na.rm=TRUE)})
 
 
   loop<-0
@@ -69,34 +69,34 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
     w1<-as.numeric(wiMat[,1])
     w2<-as.numeric(wiMat[,2])
     w3<-as.numeric(wiMat[,3])
-    sumw1<-sum(w1)
-    sumw2<-sum(w2)
-    sumw3<-sum(w3)
+    sumw1<-sum(w1, na.rm=TRUE)
+    sumw2<-sum(w2, na.rm=TRUE)
+    sumw3<-sum(w3, na.rm=TRUE)
 
     if(!quiet)
     { 
       cat("sumw1=", sumw1, " sumw2=", sumw2, " sumw3=", sumw3, "\n")    
     }
 
-    sumw1xcTxc<-sum(w1*xcTxc)
-    sumw1xcT1<-sum(w1*xcT1)
-    sumw1xcT1.sq<-sum(w1*xcT1^2)
+    sumw1xcTxc<-sum(w1*xcTxc, na.rm=TRUE)
+    sumw1xcT1<-sum(w1*xcT1, na.rm=TRUE)
+    sumw1xcT1.sq<-sum(w1*xcT1^2, na.rm=TRUE)
  
-    sumw1xnTxn<-sum(w1*xnTxn)
-    sumw1xnT1<-sum(w1*xnT1)
-    sumw1xnT1.sq<-sum(w1*xnT1^2)
+    sumw1xnTxn<-sum(w1*xnTxn, na.rm=TRUE)
+    sumw1xnT1<-sum(w1*xnT1, na.rm=TRUE)
+    sumw1xnT1.sq<-sum(w1*xnT1^2, na.rm=TRUE)
  
-    sumw2xTx<-sum(w2*xTx)
-    sumw2xT1<-sum(w2*xT1)
-    sumw2xT1.sq<-sum(w2*xT1^2)
+    sumw2xTx<-sum(w2*xTx, na.rm=TRUE)
+    sumw2xT1<-sum(w2*xT1, na.rm=TRUE)
+    sumw2xT1.sq<-sum(w2*xT1^2, na.rm=TRUE)
  
-    sumw3xcTxc<-sum(w3*xcTxc)
-    sumw3xcT1<-sum(w3*xcT1)
-    sumw3xcT1.sq<-sum(w3*xcT1^2)
+    sumw3xcTxc<-sum(w3*xcTxc, na.rm=TRUE)
+    sumw3xcT1<-sum(w3*xcT1, na.rm=TRUE)
+    sumw3xcT1.sq<-sum(w3*xcT1^2, na.rm=TRUE)
  
-    sumw3xnTxn<-sum(w3*xnTxn)
-    sumw3xnT1<-sum(w3*xnT1)
-    sumw3xnT1.sq<-sum(w3*xnT1^2)
+    sumw3xnTxn<-sum(w3*xnTxn, na.rm=TRUE)
+    sumw3xnT1<-sum(w3*xnT1, na.rm=TRUE)
+    sumw3xnT1.sq<-sum(w3*xnT1^2, na.rm=TRUE)
  
     # M-step
     # mixture proportions
@@ -137,7 +137,7 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
     if(!quiet)
     { cat("Psi.m.new>>\n"); print(round(Psi.m.new,3)); cat("\n") }
       
-    err.len<-sum(abs(Psi.m.new-Psi.m)<eps)
+    err.len<-sum(abs(Psi.m.new-Psi.m)<eps, na.rm=TRUE)
     if(err.len==length(Psi.m))
     {
       # the following statement is to 
@@ -172,29 +172,29 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
   # update gene cluster membership
   memGenes<-apply(memMat, 1, maxPosFun, maxFlag=maxFlag, 
                   thrshPostProb=thrshPostProb)
-  sumw1<-mean(memMat[,1])
-  sumw2<-mean(memMat[,2])
-  sumw3<-mean(memMat[,3])
+  sumw1<-mean(memMat[,1], na.rm=TRUE)
+  sumw2<-mean(memMat[,2], na.rm=TRUE)
+  sumw3<-mean(memMat[,3], na.rm=TRUE)
 
-  sumw1xcTxc<-sum(w1*xcTxc)
-  sumw1xcT1<-sum(w1*xcT1)
-  sumw1xcT1.sq<-sum(w1*xcT1^2)
+  sumw1xcTxc<-sum(w1*xcTxc, na.rm=TRUE)
+  sumw1xcT1<-sum(w1*xcT1, na.rm=TRUE)
+  sumw1xcT1.sq<-sum(w1*xcT1^2, na.rm=TRUE)
  
-  sumw1xnTxn<-sum(w1*xnTxn)
-  sumw1xnT1<-sum(w1*xnT1)
-  sumw1xnT1.sq<-sum(w1*xnT1^2)
+  sumw1xnTxn<-sum(w1*xnTxn, na.rm=TRUE)
+  sumw1xnT1<-sum(w1*xnT1, na.rm=TRUE)
+  sumw1xnT1.sq<-sum(w1*xnT1^2, na.rm=TRUE)
  
-  sumw2xTx<-sum(w2*xTx)
-  sumw2xT1<-sum(w2*xT1)
-  sumw2xT1.sq<-sum(w2*xT1^2)
+  sumw2xTx<-sum(w2*xTx, na.rm=TRUE)
+  sumw2xT1<-sum(w2*xT1, na.rm=TRUE)
+  sumw2xT1.sq<-sum(w2*xT1^2, na.rm=TRUE)
  
-  sumw3xcTxc<-sum(w3*xcTxc)
-  sumw3xcT1<-sum(w3*xcT1)
-  sumw3xcT1.sq<-sum(w3*xcT1^2)
+  sumw3xcTxc<-sum(w3*xcTxc, na.rm=TRUE)
+  sumw3xcT1<-sum(w3*xcT1, na.rm=TRUE)
+  sumw3xcT1.sq<-sum(w3*xcT1^2, na.rm=TRUE)
  
-  sumw3xnTxn<-sum(w3*xnTxn)
-  sumw3xnT1<-sum(w3*xnT1)
-  sumw3xnT1.sq<-sum(w3*xnT1^2)
+  sumw3xnTxn<-sum(w3*xnTxn, na.rm=TRUE)
+  sumw3xnT1<-sum(w3*xnT1, na.rm=TRUE)
+  sumw3xnT1.sq<-sum(w3*xnT1^2, na.rm=TRUE)
  
   llkh<- -negQFunc(Psi.m, X, nc, nn, n,
     xcMat, xnMat, xcTxc, xnTxn, xTx, xT1,
@@ -208,7 +208,7 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
   memGenes2<-rep(1, nGenes)
   memGenes2[memGenes==2]<-0
 
-  if(sum(is.null(geneNames)))
+  if(sum(is.null(geneNames), na.rm=TRUE))
   {
     geneNames<-paste("gene", 1:nGenes, sep="")
   } 
@@ -225,7 +225,7 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
 maxPosFun<-function(x, maxFlag=TRUE, thrshPostProb=0.50)
 {
   if(maxFlag)
-  { pos<-which(x==max(x))
+  { pos<-which(x==max(x, na.rm=TRUE))
     pos<-pos[1]
     return(pos)
   }
@@ -237,7 +237,7 @@ maxPosFun<-function(x, maxFlag=TRUE, thrshPostProb=0.50)
     return(2) 
   } # non-differentially expressed
 
-  pos<-which(x==max(x))
+  pos<-which(x==max(x, na.rm=TRUE))
 
   return(pos)
 }

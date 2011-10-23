@@ -1,3 +1,6 @@
+# modified on Sept. 28, 2011
+#  (1) added 'na.rm=TRUE' to function 'sum'
+#
 # get wij=pi.j*f.j(xi)/[pi.1*f.1(xi)+pi.2*f.2(xi)+pi.3*f.3(xi)]
 # j=1,2,3
 # Psi.m=(pi.1, pi.2, 
@@ -12,8 +15,8 @@ function(Xi, Psi.m, memSubjects, eps=1.0e-6)
 {
   # check if parameters are in appropriate ranges
   checkPara(Psi.m, eps)
-  nc<-sum(memSubjects==1)
-  nn<-sum(memSubjects==0)
+  nc<-sum(memSubjects==1, na.rm=TRUE)
+  nn<-sum(memSubjects==0, na.rm=TRUE)
   n<-nc+nn
 
   # mixture proportions
@@ -85,13 +88,13 @@ function(Xi, Psi.m, memSubjects, eps=1.0e-6)
   ###
   # density for genes in cluster 1 (over-expressed)
   ###
-  XiTXi.c<-sum(Xci^2)
-  XiT1.c<-sum(Xci)
+  XiTXi.c<-sum(Xci^2, na.rm=TRUE)
+  XiT1.c<-sum(Xci, na.rm=TRUE)
   aiTai.c1<-XiTXi.c-2*mu.c1*XiT1.c+nc*mu.c1^2
   aiT12.c1<-XiT1.c^2-2*nc*mu.c1*XiT1.c+nc^2*mu.c1^2
 
-  XiTXi.n<-sum(Xni^2)
-  XiT1.n<-sum(Xni)
+  XiTXi.n<-sum(Xni^2, na.rm=TRUE)
+  XiT1.n<-sum(Xni, na.rm=TRUE)
   aiTai.n1<-XiTXi.n-2*mu.n1*XiT1.n+nn*mu.n1^2
   aiT12.n1<-XiT1.n^2-2*nn*mu.n1*XiT1.n+nn^2*mu.n1^2
 
@@ -105,8 +108,8 @@ function(Xi, Psi.m, memSubjects, eps=1.0e-6)
   ###
   # density for genes in cluster 2 (non-expressed)
   ###
-  XiTXi<-sum(Xi^2)
-  XiT1<-sum(Xi)
+  XiTXi<-sum(Xi^2, na.rm=TRUE)
+  XiT1<-sum(Xi, na.rm=TRUE)
   aiTai.2<-XiTXi-2*mu.2*XiT1+n*mu.2^2
   aiT12.2<-XiT1^2-2*n*mu.2*XiT1+n^2*mu.2^2
 
@@ -131,7 +134,7 @@ function(Xi, Psi.m, memSubjects, eps=1.0e-6)
 
   tt<-c(delta1, delta2, delta3)
   names(tt)<-c("delta1", "delta2", "delta3")
-  pos<-which(tt==min(tt))
+  pos<-which(tt==min(tt, na.rm=TRUE))
   pos<-pos[1]
   ################
 

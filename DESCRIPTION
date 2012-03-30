@@ -1,7 +1,7 @@
 Package: GeneSelectMMD
 Type: Package
 Title: Gene selection based on the marginal distributions of gene profiles that characterized by a mixture of three-component multivariate distributions
-Version: 1.11.0
+Version: 1.12.0
 Date: 2011-10-23
 Author: Weiliang Qiu <stwxq@channing.harvard.edu>, Wenqing He <whe@stats.uwo.ca>, Xiaogang Wang <stevenw@mathstat.yorku.ca>, Ross Lazarus <ross.lazarus@channing.harvard.edu>.
 Maintainer: Weiliang Qiu <stwxq@channing.harvard.edu>

@@ -29,7 +29,9 @@ function(X,
     mat3.p<-mat3[mat3[,3]>0,]
     mat3.n<-mat3[mat3[,3]<0,]
     tmpn<-ceiling(nGenes/5)
-    tmpn<-min(max(tmpn, 2, na.rm=TRUE), floor(nGenes/3), na.rm=TRUE)
+    #tmpn<-min(max(tmpn, 2, na.rm=TRUE), floor(nGenes/3), na.rm=TRUE)
+    tmpn<-min(c(nrow(mat3.p), nrow(mat3.n),  
+      max(tmpn, 2, na.rm=TRUE), floor(nGenes/3)), na.rm=TRUE)
     posUpp<-mat3.p[1:tmpn,1]
     posLow<-mat3.n[1:tmpn,1]
   }

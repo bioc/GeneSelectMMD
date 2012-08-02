@@ -38,6 +38,7 @@ An ExpressionSet object with expression levels replaced by
 residuals of linear regression analysis.
 }
 \author{
+Jarrett Morrow \email{remdj@channing.harvard.edu},
 Weiliang Qiu \email{stwxq@channing.harvard.edu},
 Wenqing He \email{whe@stats.uwo.ca},
 Xiaogang Wang \email{stevenw@mathstat.yorku.ca},

@@ -8,7 +8,28 @@ function(X,
 
   nGenes<-nrow(X)
   alpha.old<-alpha
-  mat<-apply(X, 1, testFun, memSubjects=memSubjects, alpha=alpha)
+
+  if (identical(testFun,"myTtest")) {
+
+# use the Fortran myTtest routine
+
+    xc<-X[,memSubjects==1]
+    xn<-X[,memSubjects==0]
+    pvals<-rep(0,nGenes)
+    tstats<-rep(0,nGenes)
+
+    res <- .Fortran("myTtest", xc=as.double(xc), xn=as.double(xn),
+                  numc=as.integer(ncol(xc)), numn=as.integer(ncol(xn)),
+                  nGenes=as.integer(nGenes),
+                  pvals=as.double(pvals), tstats=as.double(tstats),
+                  NAOK=TRUE      )
+
+    mat<-t(cbind(res$pvals,res$tstats))
+  }
+  else {
+        mat<-apply(X, 1, testFun, memSubjects=memSubjects, alpha=alpha)
+  }
+
   mat<-t(mat)
   colnames(mat)<-c("pvalue", "stat")
 

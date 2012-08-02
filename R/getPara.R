@@ -87,8 +87,33 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
                mu.c3, log(sigma2.c3), r.c3, 
                delta.n3, log(sigma2.n3), r.n3)
     names(paraIni)<-paraNamesRP
-  
-    mat<-t(apply(X, 1, wiFun, Psi.m=paraIni, memSubjects=memSubjects, eps=eps))
+ 
+
+#   call the wiFun Fortran routine below 
+#    mat<-t(apply(X, 1, wiFun, Psi.m=paraIni, memSubjects=memSubjects, eps=eps))
+
+# initialize the wi arrays
+    wi1<-rep(0,nrow(X))
+    wi2<-rep(0,nrow(X))
+    wi3<-rep(0,nrow(X))
+
+#   checkpara was called within wiFun.R, however this will be handled
+#   in Fortran, so checking the dimension of Psi.m may not be included
+#   in the future
+
+# replace NAs with zeros and pass this matrix to wifun
+    Xnna<-X
+    Xnna[is.na(Xnna)] <- 0
+
+    res <- .Fortran("wifun", wi1=as.double(wi1), wi2=as.double(wi2), wi3=as.double(wi3), 
+            as.double(Xnna), as.double(paraIni),
+            as.integer(memSubjects), as.double(eps),
+            as.integer(nrow(X)), as.integer(ncol(X)),
+            as.integer(sum(memSubjects==1, na.rm=TRUE)),
+            as.integer(sum(memSubjects==0, na.rm=TRUE))     )
+
+    mat<-cbind(res$wi1,res$wi2,res$wi3)
+
 
     w1<-as.numeric(mat[,1])
     w2<-as.numeric(mat[,2])
@@ -129,14 +154,20 @@ function(X, memSubjects, memGenes, eps=1.0e-6)
     sumw3xnT1<-sum(w3*xnT1, na.rm=TRUE)
     sumw3xnT1.sq<-sum(w3*xnT1^2, na.rm=TRUE)
   
-    llkh<- -negQFunc(paraIni, X, nc, nn, n,
-      xcMat, xnMat, xcTxc, xnTxn, xTx, xT1,
-      sumw1, sumw2, sumw3, 
-      sumw1xcTxc, sumw1xcT1, sumw1xcT1.sq,
-      sumw1xnTxn, sumw1xnT1, sumw1xnT1.sq,
-      sumw2xTx, sumw2xT1, sumw2xT1.sq,
-      sumw3xcTxc, sumw3xcT1, sumw3xcT1.sq,
-      sumw3xnTxn, sumw3xnT1, sumw3xnT1.sq)
+
+# call the Fortran routine negqfunc (converted from negQFunc)
+  llkh <- 0
+
+  res <- .Fortran("negqfunc", llkh=as.double(llkh), as.double(paraIni),
+            as.double(nc), as.double(nn), as.double(n),
+            as.double(sumw1), as.double(sumw2), as.double(sumw3),
+            as.double(sumw1xcTxc), as.double(sumw1xcT1), as.double(sumw1xcT1.sq),
+            as.double(sumw1xnTxn), as.double(sumw1xnT1), as.double(sumw1xnT1.sq),
+            as.double(sumw2xTx), as.double(sumw2xT1), as.double(sumw2xT1.sq),
+            as.double(sumw3xcTxc), as.double(sumw3xcT1), as.double(sumw3xcT1.sq),
+            as.double(sumw3xnTxn), as.double(sumw3xnT1), as.double(sumw3xnT1.sq)       )
+
+  llkh <- -res$llkh
   }
 
   return(list(para=paraIni, llkh=llkh))

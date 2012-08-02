@@ -8,6 +8,8 @@ export(
   obtainResi
 )
 
+useDynLib(GeneSelectMMD)
+
 importMethodsFrom(Biobase,
                  exprs)
 

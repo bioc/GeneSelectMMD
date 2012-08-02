@@ -70,6 +70,7 @@ length of the vector \code{x}, and \code{delta=floor(len.x/numpoints).}}
 A Marginal Mixture Model for Selecting Differentially Expressed Genes across Two Types of Tissue Samples. \emph{The International Journal of Biostatistics. 4(1):Article 20.} \url{http://www.bepress.com/ijb/vol4/iss1/20}
 }
 \author{ 
+Jarrett Morrow \email{remdj@channing.harvard.edu},
 Weiliang Qiu \email{stwxq@channing.harvard.edu},
 Wenqing He \email{whe@stats.uwo.ca},
 Xiaogang Wang \email{stevenw@mathstat.yorku.ca},

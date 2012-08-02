@@ -53,7 +53,11 @@ transBoxCoxMat<-function(mat,
         eps=eps, plotFlag=plotFlag, ITMAX=ITMAX) 
   lambda<-mean(lambda.vec, na.rm=TRUE)
   #print(paste("******** average lambda=", lambda))
+
+
   mat.new<-apply(mat, 2, transBoxCox.default, lambda=lambda, eps=eps) 
+
+
   return(list(dat=mat.new, lambda.avg=lambda, lambda.vec=lambda.vec))
 }
 
@@ -127,6 +131,24 @@ transBoxCox.default<-function(x, lambda, eps=1.0e-3)
   return(res)
 }
 
+
+statVecFunc<-function(lambdai,x,eps,criterion=c("cor", "skewness", "kurtosis"))
+{
+    x2<-transBoxCox.default(x, lambdai, eps)
+    if(criterion=="cor")
+    { tmp<-qqnormCorFunc(x2) 
+      statVecFunc<- -tmp
+    }
+    else if (criterion=="skewness")
+    { tmp<-skewnessFunc(x2)
+      statVecFunc<-abs(tmp[2])
+    } else # criterion=="kurtosis"
+    { tmp<-kurtosisFunc(x2)
+      statVecFunc<-abs(tmp[2])
+    }
+    return(statVecFunc)
+}
+
 optimalLambda<-function(x, 
                         criterion=c("cor", "skewness", "kurtosis"), 
                         minL=-10, 
@@ -136,36 +158,25 @@ optimalLambda<-function(x,
                         plotFlag=FALSE)
 {
   criterion<-match.arg(criterion, c("cor", "skewness", "kurtosis"))
-  lambdaVec<-seq(from=minL, to=maxL, by=stepL)
-  len<-length(lambdaVec)
-  statVec<-rep(0, len)
-  for(i in 1:len)
-  { lambdai<-lambdaVec[i]  
-    x2<-transBoxCox.default(x, lambdai, eps)
-    if(criterion=="cor")
-    { tmp<-qqnormCorFunc(x2) 
-      statVec[i]<- -tmp
-    }
-    else if (criterion=="skewness")
-    { tmp<-skewnessFunc(x2)
-      statVec[i]<-abs(tmp[2])
-    } else # criterion=="kurtosis"
-    { tmp<-kurtosisFunc(x2)
-      statVec[i]<-abs(tmp[2])
-    }
-  }
-  
-  pos<-which(is.na(statVec)==TRUE)
-  if(length(pos))
-  { statVec<-statVec[-pos]
-    lambdaVec<-lambdaVec[-pos]
-  }
-  pos<-which(statVec==min(statVec, na.rm=TRUE))
-  pos<-pos[1]
-  lambda<-lambdaVec[pos]
+
+
+# search for the optimal lambda
+  res <- optimize(   statVecFunc,c(minL,maxL),
+                        x=x,eps=eps,criterion=criterion,tol=stepL,maximum=FALSE )
+
+  lambda <- res$minimum
+
+# statVec and lambdaVec are not calculated and put into arrays when using the lambda optimization
+# unless a plot is required (for statVec, the value at optimal lambda is stored by default)
+  statVec<- res$objective
+  lambdaVec<-lambda
 
   if(plotFlag)
-  { plot(lambdaVec, statVec, xlab="lambda", ylab="correlation")
+  { 
+    lambdaVec<-seq(from=minL, to=maxL, by=stepL)
+    statVec<-lapply(lambdaVec,statVecFunc,x=x,eps=eps,criterion=criterion)
+
+    plot(lambdaVec, statVec, xlab="lambda", ylab="correlation")
     title(main="Box-Cox normality plot", sub=paste("optimal lambda=", lambda, sep=""))
   }
 

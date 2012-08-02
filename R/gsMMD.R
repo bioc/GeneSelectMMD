@@ -216,12 +216,12 @@ function(X,
       paraMatRP[,i]<-paraIniMatRP[,i]
       llkhVec[i]<-llkhIniVec[i]
       memMat[,i]<-memIniMat[,i]
-      wiArray[,,i]<-res$memMat
+      wiArray[,,i]<-res$wiMat
     } else {
       paraMatRP[,i]<-res$para
       llkhVec[i]<-res$llkh
       memMat[,i]<-res$memGenes
-      wiArray[,,i]<-res$memMat
+      wiArray[,,i]<-res$wiMat
     }
   }
   rownames(paraIniMatRP)<-paraNamesRP
@@ -264,7 +264,7 @@ function(X,
   { cat("llkhVec>>\n"); print(llkhVec); cat("\n"); }
   pos<-which(llkhVec==max(llkhVec, na.rm=TRUE))
   len<-length(pos)
-  tt<-sample(1:len, 1, rep=FALSE)
+  tt<-sample(1:len, 1, replace=FALSE)
   pos<-pos[tt]
 
   memGenes<-as.vector(memMat[,pos])
@@ -312,7 +312,9 @@ getIniMemGenes<-function(X, memSubjects, geneNames, iniGeneMethod="Ttest",
   if(iniGeneMethod=="Ttest")
   {
     # (1) two-sample t-test
-    tmp<-iniMemGenesTestFunc(X, memSubjects=memSubjects, testFun=myTtest, 
+#    tmp<-iniMemGenesTestFunc(X, memSubjects=memSubjects, testFun=myTtest, 
+#   string "myTtest" is passed to enable the Fortran myTtest routine
+    tmp<-iniMemGenesTestFunc(X, memSubjects=memSubjects, testFun="myTtest", 
                         geneNames=geneNames, alpha = alpha, eps=eps)
   } else { #iniGeneMethod=="Wilcox"
     # (2) two-sample wilcoxon test

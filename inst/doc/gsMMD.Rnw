@@ -98,6 +98,9 @@
 
 \title{Gene Selection Using \Rpackage{GeneSelectMMD}}
 \author{
+        Jarrett Morrow\\
+        \email{remdj@channing.harvard.edu},
+        \\
         Weilianq Qiu\\
         \email{stwxq@channing.harvard.edu},
         \\
@@ -137,6 +140,7 @@ the gene (c.f. Qiu et al., 2008).
 Note that starting from version 1.7.1, we reparameterize the model parameters.
 The input and output are the same as the previous versions.
 To improve speed, we use numerical optimization, instead of iteration based on explicit formula, to obtain parameter estimates.
+Since verions 2.0.7, the speed has also been improved by using Fortran 77 code for some of the less efficient operations.
 
 %\clearpage
 
@@ -615,9 +619,8 @@ Actually, the two sample Wilcoxon rank-sum test is implemented in the
 \Rpackage{GeneSelectMMD}. The above code is used as an illustration
 on how to use the functions \code{gsMMD2} and \code{gsMMD2.default}.
 
-Note that the speed of the four functions is slow for large data sets. 
-So we recommend that the program be in background mode if it is run in
-Unix or Linux environment.
+Note that the speed of the four functions can be slow for large data sets,
+however it has been improved since version 2.0.7 by using Fotran code. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -677,13 +680,33 @@ The following R code illustrates the usage of \code{plotHistDensity}:
       cex = 1)
 
 @
+\begin{figure}[h]
+\caption{Plot produced using plotHistDensity}
+\label{Figure:plotHistDensity}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Efficiency improvements}
+
+Version 2.0.7 includes efficiency improvements to the EM optimization process.  Specifically, Fortran 77 code for version 3.0 of the L-BFGS-B optimization algorithm from Morales and Nocedal (2011)\nocite{MoralesNocedal:2011} has been included.  The objective functions for the EM optimization have been translated to Fortran 77 in order to facilitate the use of this optimization code.  Additional operations within the EM optimization iterative loop have also been written in Fortran 77 to improve the speed, where the calculation of the weigths has been addressed.  Lastly, although the t-test is an optional operation, and therefore, improvements in its speed may not always be of consequence, the two-sample t-test calculations have increased efficiency in version 2.0.7.
+
+Analysis involving simulated microarray data for 32,000 genes and a total of 2,000 samples is accomplished in under a minute on a notebook computer (Figure ~\ref{Figure:efficiency}), and therefore, the enhanced performance provided by GeneSelectMMD can be attained on larger datasets using typical hardware.
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=0.6\textwidth,angle=0]{GS207runTimesSim1k.pdf}
+\caption{Plot of running time vs number of genes using an Asus notebook with Intel\textregistered{ }Core\texttrademark{ }i5-2450M CPU and 8GB memory}
+\label{Figure:efficiency}
+\end{center}
+\end{figure}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discussion}
 
 The speeds of the four gene selection functions described in Section
-\ref{Section: Gene Selection Functions}  are slow. One way to improve the
-speed is to embed Fortran or C code in the R code. We will take such
-an approach in the future version of the \Rpackage{GeneSelectMMD}.
+\ref{Section: Gene Selection Functions} can be slow, however the speed has been
+improved by embedding Fortran code in the R code for version 2.0.7 
+of the \Rpackage{GeneSelectMMD}.
 
 
 \bibliographystyle{plain}

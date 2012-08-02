@@ -53,128 +53,98 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
   xT1<-apply(X, 1, function(x) {sum(x, na.rm=TRUE)})
 
 
+# initialize the wi arrays
+  wi1<-rep(0,nrow(X))
+  wi2<-rep(0,nrow(X))
+  wi3<-rep(0,nrow(X))
+
   loop<-0
-  while(1)
-  { 
-    if(!quiet)
-    {
-      cat("************\n")
-      cat("loop=", loop, "\n")
-    }
 
-    # E-step
-    # obtain weights w_{ij}(\Psi^{(m)}), i.e. E(Z_{ij} | x_i, Psi^{(m)})
-    wiMat<-t(apply(X, 1, wiFun, Psi.m=Psi.m, memSubjects=memSubjects, eps=eps))
+# call the paraestloop subroutine in paraEstLoop.f
+# paraEstLoop.f includes the loop previously found in paraEst.R
 
-    w1<-as.numeric(wiMat[,1])
-    w2<-as.numeric(wiMat[,2])
-    w3<-as.numeric(wiMat[,3])
-    sumw1<-sum(w1, na.rm=TRUE)
-    sumw2<-sum(w2, na.rm=TRUE)
-    sumw3<-sum(w3, na.rm=TRUE)
+# replace NAs with zeros and pass this matrix to paraestloop
+  Xnna<-X
+  Xnna[is.na(Xnna)] <- 0
 
-    if(!quiet)
-    { 
-      cat("sumw1=", sumw1, " sumw2=", sumw2, " sumw3=", sumw3, "\n")    
-    }
+  res <- .Fortran("paraestloop", w1=as.double(wi1), w2=as.double(wi2), w3=as.double(wi3),
+          as.double(Xnna), Psi.m=as.double(Psi.m),
+          as.integer(memSubjects),
+          as.double(xcTxc), as.double(xcT1),
+          as.double(xnTxn), as.double(xnT1),
+          as.double(xTx), as.double(xT1),
+          as.integer(nrow(X)),
+          as.integer(ncol(X)),
+          as.integer(sum(memSubjects==1, na.rm=TRUE)),
+          as.integer(sum(memSubjects==0, na.rm=TRUE)),
+          as.integer(ITMAX), as.double(eps),
+          as.logical(quiet), loop=as.integer(loop)     )
 
-    sumw1xcTxc<-sum(w1*xcTxc, na.rm=TRUE)
-    sumw1xcT1<-sum(w1*xcT1, na.rm=TRUE)
-    sumw1xcT1.sq<-sum(w1*xcT1^2, na.rm=TRUE)
- 
-    sumw1xnTxn<-sum(w1*xnTxn, na.rm=TRUE)
-    sumw1xnT1<-sum(w1*xnT1, na.rm=TRUE)
-    sumw1xnT1.sq<-sum(w1*xnT1^2, na.rm=TRUE)
- 
-    sumw2xTx<-sum(w2*xTx, na.rm=TRUE)
-    sumw2xT1<-sum(w2*xT1, na.rm=TRUE)
-    sumw2xT1.sq<-sum(w2*xT1^2, na.rm=TRUE)
- 
-    sumw3xcTxc<-sum(w3*xcTxc, na.rm=TRUE)
-    sumw3xcT1<-sum(w3*xcT1, na.rm=TRUE)
-    sumw3xcT1.sq<-sum(w3*xcT1^2, na.rm=TRUE)
- 
-    sumw3xnTxn<-sum(w3*xnTxn, na.rm=TRUE)
-    sumw3xnT1<-sum(w3*xnT1, na.rm=TRUE)
-    sumw3xnT1.sq<-sum(w3*xnT1^2, na.rm=TRUE)
- 
-    # M-step
-    # mixture proportions
-    piVec.new<-(c(sumw1, sumw2)+const.b1.b2-1)/(nGenes+sumb-3)
-    names(piVec.new)<-c("pi.1", "pi.2")
 
-    thetaIni<-Psi.m[-c(1:2)]
-    nTheta<-length(thetaIni)
-    lower<-rep(-Inf, nTheta)
-    upper<-rep(Inf, nTheta)
-    res<-optim(par=thetaIni, fn=negQFunc, 
-          nc=nc, nn=nn, n=n, xcMat=xcMat, xnMat=xnMat, 
-          xcTxc=xcTxc, xnTxn=xnTxn, xTx=xTx, xT1=xT1,
-          sumw1=sumw1, sumw2=sumw2, sumw3=sumw3, 
-          sumw1xcTxc=sumw1xcTxc, sumw1xcT1=sumw1xcT1, sumw1xcT1.sq=sumw1xcT1.sq,
-          sumw1xnTxn=sumw1xnTxn, sumw1xnT1=sumw1xnT1, sumw1xnT1.sq=sumw1xnT1.sq,
-          sumw2xTx=sumw2xTx, sumw2xT1=sumw2xT1, sumw2xT1.sq=sumw2xT1.sq,
-          sumw3xcTxc=sumw3xcTxc, sumw3xcT1=sumw3xcT1, sumw3xcT1.sq=sumw3xcT1.sq,
-          sumw3xnTxn=sumw3xnTxn, sumw3xnT1=sumw3xnT1, sumw3xnT1.sq=sumw3xnT1.sq,
-          method = "L-BFGS-B",
-          lower = lower, upper = upper)
-
-    if(res$convergence)
-    {
-      cat("convergence=", res$convergence, "\n")
-      cat("message=", res$message, "\n")
-      cat("number of calls to fn and gr>>\n"); print(res$counts); cat("\n");
-      cat("thetaIni>>\n"); print(thetaIni); cat("\n");
-    }
- 
-    negQ<-res$value
-    theta<-res$par
-
-    # update parameters
-    Psi.m.new<-c(piVec.new, theta)
-    names(Psi.m.new)<-paraNamesRP
-
-    if(!quiet)
-    { cat("Psi.m.new>>\n"); print(round(Psi.m.new,3)); cat("\n") }
-      
-    err.len<-sum(abs(Psi.m.new-Psi.m)<eps, na.rm=TRUE)
-    if(err.len==length(Psi.m))
-    {
-      # the following statement is to 
-      # make sure eta.new is an update from current wMat
-      # so that d Q / d eta = 0
-      Psi.m<-Psi.m.new
-      break
-    }
-
-    Psi.m<-Psi.m.new
-    loop<-loop+1
-
-    if(loop>ITMAX)
-    { cat("*********************\n") 
-      cat("Warning! Number of looping (= ", loop, 
-        ") exceeds ITMAX (=", ITMAX, ")!\n")
-      cat("EM algorithm did not converge!\n")
-      cat("*********************\n") 
-      break
-    }
-  }
-
+# extract the parameters, w's and the number of loops required
+  Psi.m <- res$Psi.m
+  w1<-res$w1
+  w2<-res$w2
+  w3<-res$w3
+  loop<-res$loop
   
   if(!quiet)
   { cat("Total iterations for EM algorithm=", loop, "\n") }
 
-  # gene cluster membership
-  memMat<-t(apply(X, 1, wiFun, Psi.m=Psi.m, memSubjects=memSubjects, eps=eps))
-  colnames(memMat)<-c("cluster1", "cluster2", "cluster3")
-  rownames(memMat)<-geneNames
 
-  # update gene cluster membership
-  memGenes<-apply(memMat, 1, maxPosFun, maxFlag=maxFlag, 
-                  thrshPostProb=thrshPostProb)
-  sumw1<-mean(memMat[,1], na.rm=TRUE)
-  sumw2<-mean(memMat[,2], na.rm=TRUE)
-  sumw3<-mean(memMat[,3], na.rm=TRUE)
+# gene cluster membership
+#  memMat was changed to wiMat when Fortran code was included
+#  memMat<-t(apply(X, 1, wiFun, Psi.m=Psi.m, memSubjects=memSubjects, eps=eps))
+
+#   probably don't need to create these again because it is created at the start
+  wi1<-rep(0,nrow(X))
+  wi2<-rep(0,nrow(X))
+  wi3<-rep(0,nrow(X))
+
+# checkpara was called within wiFun.R, however this will be handled
+# in Fortran, so checking the dimension of Psi.m will not be included
+# in the future
+#
+# eps=1.0e-6 for wiFun
+
+# replace NAs with zeros and pass this matrix to wifun
+  Xnna<-X
+  Xnna[is.na(Xnna)] <- 0
+
+  res <- .Fortran("wifun", wi1=as.double(wi1), wi2=as.double(wi2), wi3=as.double(wi3), 
+            as.double(Xnna), as.double(Psi.m),
+            as.integer(memSubjects), as.double(1.0e-6),
+            as.integer(nrow(X)), as.integer(ncol(X)),
+            as.integer(sum(memSubjects==1, na.rm=TRUE)),
+            as.integer(sum(memSubjects==0, na.rm=TRUE))     )
+
+
+  wiMat<-cbind(res$wi1,res$wi2,res$wi3)
+
+  colnames(wiMat)<-c("cluster1", "cluster2", "cluster3")
+  rownames(wiMat)<-geneNames
+
+#  update gene cluster membership
+#  using Fortran routine maxposfun (converted maxPosFun in R)
+#   memGenes<-apply(memMat, 1, maxPosFun, maxFlag=maxFlag, thrshPostProb=thrshPostProb)
+#   memMat was changed to wiMat when Fortran code was included
+
+# initialize memGenes array
+  memGenes<-rep(0,as.integer(nrow(X)))
+
+  res <- .Fortran("maxposfun", memGenes=as.integer(memGenes), as.double(wiMat), 
+                  as.integer(nrow(X)), as.logical(maxFlag), as.double(thrshPostProb)  )
+
+  memGenes<-res$memGenes
+
+
+  sumw1<-mean(wiMat[,1], na.rm=TRUE)
+  sumw2<-mean(wiMat[,2], na.rm=TRUE)
+  sumw3<-mean(wiMat[,3], na.rm=TRUE)
+
+  w1<-as.numeric(wiMat[,1])
+  w2<-as.numeric(wiMat[,2])
+  w3<-as.numeric(wiMat[,3])
 
   sumw1xcTxc<-sum(w1*xcTxc, na.rm=TRUE)
   sumw1xcT1<-sum(w1*xcT1, na.rm=TRUE)
@@ -196,14 +166,20 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
   sumw3xnT1<-sum(w3*xnT1, na.rm=TRUE)
   sumw3xnT1.sq<-sum(w3*xnT1^2, na.rm=TRUE)
  
-  llkh<- -negQFunc(Psi.m, X, nc, nn, n,
-    xcMat, xnMat, xcTxc, xnTxn, xTx, xT1,
-    sumw1, sumw2, sumw3, 
-    sumw1xcTxc, sumw1xcT1, sumw1xcT1.sq,
-    sumw1xnTxn, sumw1xnT1, sumw1xnT1.sq,
-    sumw2xTx, sumw2xT1, sumw2xT1.sq,
-    sumw3xcTxc, sumw3xcT1, sumw3xcT1.sq,
-    sumw3xnTxn, sumw3xnT1, sumw3xnT1.sq)
+
+  llkh <- 0
+
+  res <- .Fortran("negqfunc", llkh=as.double(llkh), as.double(Psi.m),
+            as.double(nc), as.double(nn), as.double(n),
+            as.double(sumw1), as.double(sumw2), as.double(sumw3),
+            as.double(sumw1xcTxc), as.double(sumw1xcT1), as.double(sumw1xcT1.sq),
+            as.double(sumw1xnTxn), as.double(sumw1xnT1), as.double(sumw1xnT1.sq),
+            as.double(sumw2xTx), as.double(sumw2xT1), as.double(sumw2xT1.sq),
+            as.double(sumw3xcTxc), as.double(sumw3xcT1), as.double(sumw3xcT1.sq),
+            as.double(sumw3xnTxn), as.double(sumw3xnT1), as.double(sumw3xnT1.sq)       )
+
+  llkh <- -res$llkh
+
 
   memGenes2<-rep(1, nGenes)
   memGenes2[memGenes==2]<-0
@@ -218,28 +194,8 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
   names(memGenes2)<-geneNames
 
   invisible(list(para=Psi.m, llkh=llkh, memGenes=memGenes, 
-                 memGenes2=memGenes2, memMat=memMat, loop=loop))
+                 memGenes2=memGenes2, wiMat=wiMat, loop=loop))
 }
 
-# find the position of the maximum element of 'x'
-maxPosFun<-function(x, maxFlag=TRUE, thrshPostProb=0.50)
-{
-  if(maxFlag)
-  { pos<-which(x==max(x, na.rm=TRUE))
-    pos<-pos[1]
-    return(pos)
-  }
-    
-  pos<-which(x>thrshPostProb)
-  len<-length(pos)
-  if(len==0)
-  { 
-    return(2) 
-  } # non-differentially expressed
-
-  pos<-which(x==max(x, na.rm=TRUE))
-
-  return(pos)
-}
 
 

@@ -51,7 +51,7 @@ To avoid linear dependence of tissue samples after scaling
   \item{criterion}{if \code{transformFlag=TRUE}, \code{criterion} indicates what criterion to determine if data looks like normal.  \dQuote{cor} means using Pearson's correlation. The idea is that the observed quantiles after transformation should be close to theoretical normal quantiles. So we can use Pearson's correlation to check if the scatter plot of theoretical normal quantiles versus observed quantiles is a straightline.  \dQuote{skewness} means using skewness measure to check if the distribution of the transformed data are close to normal distribution; \dQuote{kurtosis} means using kurtosis measure to check normality.}
   \item{minL}{lower limit for the \code{lambda} parameter used in Box-Cox transformation}
   \item{maxL}{upper limit for the \code{lambda} parameter used in Box-Cox transformation}
-  \item{stepL}{step increase when searching the optimal \code{lambda} parameter used in Box-Cox transformation}
+  \item{stepL}{tolerance when searching the optimal \code{lambda} parameter used in Box-Cox transformation}
   \item{eps}{a small positive value. If the absolute value of a value is smaller than \code{eps}, this value is regarded as zero.  }
   \item{ITMAX}{maximum iteration allowed for iterations in the EM algorithm}
   \item{plotFlag}{logical. Indicate if the Box-Cox normality plot should be output.}
@@ -159,6 +159,7 @@ microarray data matrix.}
 A Marginal Mixture Model for Selecting Differentially Expressed Genes across Two Types of Tissue Samples. \emph{The International Journal of Biostatistics. 4(1):Article 20.} \url{http://www.bepress.com/ijb/vol4/iss1/20}
 }
 \author{ 
+Jarrett Morrow \email{remdj@channing.harvard.edu},
 Weiliang Qiu \email{stwxq@channing.harvard.edu},
 Wenqing He \email{whe@stats.uwo.ca},
 Xiaogang Wang \email{stevenw@mathstat.yorku.ca},
@@ -170,7 +171,7 @@ Ross Lazarus \email{ross.lazarus@channing.harvard.edu}
 \code{\link{gsMMD2}}
 }
 \note{
-The speed of the program is slow for large data sets.
+The speed of the program can be slow for large data sets, however it has been improved using Fortran code.
 }
 \examples{
 

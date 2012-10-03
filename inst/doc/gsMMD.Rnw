@@ -111,7 +111,7 @@
         \email{stevenw@mathstat.yorku.ca},
         \\
         Ross Lazarus\\
-        \email{ross.lazarus@channing.harvard.edu},
+        \email{ross.lazarus@gmail.com},
         }       
 
 \maketitle
@@ -141,6 +141,9 @@ Note that starting from version 1.7.1, we reparameterize the model parameters.
 The input and output are the same as the previous versions.
 To improve speed, we use numerical optimization, instead of iteration based on explicit formula, to obtain parameter estimates.
 Since verions 2.0.7, the speed has also been improved by using Fortran 77 code for some of the less efficient operations.
+Lastly, in version 2.0.8 onward,
+the likelihood values provided to the user are based on the observed data, while in previous
+versions the likelihood was an expected value.
 
 %\clearpage
 
@@ -152,9 +155,9 @@ mixture of 3-component multivariate normal distributions with
 special structure for mean vectors and covariance matrices. 
 The 3
 component distributions correspond to 3 gene clusters: (1) cluster
-of genes over-expressed in the treatment group; (2) cluster of genes
+of genes over-expressed in the case group; (2) cluster of genes
 non-differentially expressed; and (3) cluster of genes
-under-expressed in the treatment group. 
+under-expressed in the case group. 
 Specifically, the marginal density of a gene profile is assumed to be
 \begin{equation}\label{Model: mixture of 3-multivariate Normal}
 \begin{aligned}
@@ -167,7 +170,7 @@ where $\pi_1$, $\pi_2$, $\pi_3$ are mixture proportions. The $m\times 1$
 vector $\mb{x}$ is a realization of the random vector
 $\mb{X}$ that represents the transformed gene profile for a randomly
 selected gene over $m$ tissue samples ($m=m_c+m_n$, where
-$m_c$ is the number of abnormal tissue samples and $m_n$ normal
+$m_c$ is the number of case tissue samples and $m_n$ control
 tissue samples);
 $\thbf_k$,
 is the parameter set for the $k$-th component distribution $f_k$,
@@ -207,15 +210,15 @@ respectively, where correlation matrix
 $t=c_1$, $n_1$, $2$, $c_3$, or $n_3$. $n_t=m_c$ if $t=c_1$ or $c_3$;
 $n_t=m$ if $t=2$; $n_t=m_n$ if $t=n_1$, or $n_3$. Here we assume,
 without loss of generality, that the first $m_c$ elements of the random
-vector $\X$ are for the abnormal tissue samples and the remaining
-$m_n$ elements are for the normal tissue samples. Let
+vector $\X$ are for the case tissue samples and the remaining
+$m_n$ elements are for the control tissue samples. Let
 $\thbf_1=(\mu_{c_1}, \sigma^2_{c_1}, \rho_{c_1}, \mu_{n_1},
 \sigma^2_{n_1}, \rho_{n_1})^T$, $\thbf_2=(\mu_2, \sigma^2_2,
 \rho_{2})^T$, $\thbf_3=(\mu_{c_3}, \sigma^2_{c_3}, \rho_{c_3},
 \mu_{n_3}, \sigma^2_{n_3}, \rho_{n_3})^T$. Note that
 $\mu_{c_1}>\mu_{n_1}$ for component $1$ in which genes are
-overexpressed in abnormal tissue samples, and $\mu_{c_3}<\mu_{n_3}$
-for component 3 where genes are underexpressed in abnormal samples.
+over-expressed in case tissue samples, and $\mu_{c_3}<\mu_{n_3}$
+for component 3 where genes are under-expressed in case samples.
 Our prior belief is that the majority of genes are usually
 non-differentially expressed,
 so we assume $\pi_2>\pi_1$ and $\pi_2>\pi_3$.
@@ -243,7 +246,7 @@ cluster given its gene profile is larger than the posterior probability that
 the gene belongs to other gene clusters
 given its gene profile:
 \begin{equation}\label{Formula: criterion for gene selection}
-k_0=\arg\max_{k=1,2,3}Pr(\mbox{gene $i \in C_k$}|\mb{x}_i).
+k_0=\arg\max_{k=1,2,3}Pr(\mbox{gene $i \in$ cluster $k$}|\mb{x}_i).
 \end{equation}
 
 
@@ -398,14 +401,15 @@ n_3}=&\mb{I}_{n_n}+\frac{(n_n-1)\exp(r_{n_3})-1}{n_{n_3}}\mb{1}_{n_n}\mb{1}_{n_n
 The \Rpackage{GeneSelectMMD} includes four functions for gene selection:
 \code{gsMMD}, \code{gsMMD.default}, \code{gsMMD2}, and \code{gsMMD2.default}.
 
-The functions \code{gsMMD} and \code{gsMMD2} accept the object derived from the class of \Rpackage{Bioconductor}'s
+The functions \code{gsMMD} and \code{gsMMD2} accept the object derived from the class of
+ \Rpackage{Bioconductor}'s
 \code{ExpressionSet} as data input, while the functions \code{gsMMD.default}
 and \code{gsMMD2.default} accept data matrix as data input.
 
 The functions \code{gsMMD} and \code{gsMMD.default} will provide
 initial 3-cluster gene partitions (cluster of genes over-expressed in 
-treatment group, cluster of genes non-differentially expressed, and 
-cluster of genes under-expressed in treatment group) based on the 
+case group, cluster of genes non-differentially expressed, and 
+cluster of genes under-expressed in case group) based on the 
 gene-wise two-sample t-test or two-sample Wilcoxon 
 rank-sum test.
 In situations where the user would like to provide the initial 3-cluster
@@ -413,13 +417,14 @@ partition other than that provided by the gene-wise two-sample t-test or
 two sample Wilcoxon rank-sum test, 
 the functions \code{gsMMD2} and \code{gsMMD2.default} could be used. 
 
-The rows of the input data matrix (or the data matrix derived from the object derived from the class \code{ExpressionSet}) 
+The rows of the input data matrix (or the data matrix derived from the object 
+derived from the class \code{ExpressionSet}) 
 are genes, while the columns are tissue samples. The tissue type of a tissue
 sample is indicated by the argument \code{memSubjects}, which is
 a $m\times 1$ vector, $m=m_{c}+m_{n}$, $m_{c}$ is the number of
-tissue samples in the treatment group, and $m_{n}$ is the number of
+tissue samples in the case group, and $m_{n}$ is the number of
 tissue samples in the control group. \code{memSubjects[j]=1} indicates
-the $j$-th tissue sample is from the treatment group. 
+the $j$-th tissue sample is from the case group. 
 \code{memSubjects[j]=0} indicates the $j$-th tissue sample is from
 the control group.
 
@@ -436,11 +441,11 @@ it will be the transformed input data matrix.
 $G\times 1$ vector indicating the gene cluster membership, where $G$ is
 the number of genes (i.e., the number of rows of the input data matrix).
 \code{memGenes[g]=1} indicates the $g$-th gene is assigned to the cluster
-of genes over-expressed in treatment group; 
+of genes over-expressed in case group; 
 \code{memGenes[g]=2} indicates the $g$-th gene is assigned to the cluster
 of genes non-differentially-expressed; 
 \code{memGenes[g]=3} indicates the $g$-th gene is assigned to the cluster
-of genes under-expressed in treatment group. 
+of genes under-expressed in case group. 
 
   \item \code{memGenes2} is a variant of \code{memGenes}. 
 \code{memGenes2[g]=1} means the $g$-th gene is differentially expressed, 
@@ -464,23 +469,23 @@ for the 3 gene clusters (over-expressed, non-differentially expressed, and
 under-expressed).
 \code{para[4]}, \code{para[5]}, and \code{para[6]} are 
 the marginal mean, variance, and correlation of gene expression levels 
-of cluster 1 (up-regulated genes) for diseased subjects; 
+of cluster 1 (over-expressed genes) for case subjects; 
 \code{para[7]}, \code{para[8]}, and \code{para[9]} are 
 the marginal mean, variance, and correlation of gene expression levels 
-of cluster 1 (up-regulated genes) for non-diseased subjects; 
+of cluster 1 (over-expressed genes) for control subjects; 
 \code{para[10]}, \code{para[11]}, and \code{para[12]} 
 are the marginal mean, 
 variance, and correlation of gene 
 expression levels of cluster 2 (non-differentially expressed genes); 
 \code{para[13]}, \code{para[14]}, and \code{para[15]} are 
 the marginal mean, variance, and correlation of gene expression levels 
-of cluster 3 (up-regulated genes) for diseased subjects; 
+of cluster 3 (under-expressed genes) for case subjects; 
 \code{para[16]}, \code{para[17]}, and \code{para[18]} are 
 the marginal mean, variance, and correlation of gene expression levels 
-of cluster 3 (up-regulated genes) for non-diseased subjects. 
+of cluster 3 (under-expressed genes) for control subjects. 
 
 Note that genes in cluster 2 are non-differentially expressed across
-abnormal and normal tissue samples. Hence there are only 3 parameters for
+case and control tissue samples. Hence there are only 3 parameters for
 cluster 2.
 \end{itemize}
 
@@ -627,7 +632,7 @@ however it has been improved since version 2.0.7 by using Fotran code.
 \section{Error rates estimated for real microarray data sets}
 
 For real microarray data sets, the classical gene selection methods, such as two-sample t-test,
-two-sample Wilcoxon rank-sum test, could not provide the estimates of
+two-sample Wilcoxon rank-sum test, do not directly provide the estimates of
 error rates such as false discovery rate (denoted as FDR;
 it is the percentage of nondifferentially expressed genes among selected
 genes),

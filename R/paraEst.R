@@ -167,18 +167,17 @@ function(X, paraIni, memSubjects, maxFlag=TRUE, thrshPostProb=0.50,
   sumw3xnT1.sq<-sum(w3*xnT1^2, na.rm=TRUE)
  
 
+# call the Fortran subroutine llkh
   llkh <- 0
 
-  res <- .Fortran("negqfunc", llkh=as.double(llkh), as.double(Psi.m),
-            as.double(nc), as.double(nn), as.double(n),
-            as.double(sumw1), as.double(sumw2), as.double(sumw3),
-            as.double(sumw1xcTxc), as.double(sumw1xcT1), as.double(sumw1xcT1.sq),
-            as.double(sumw1xnTxn), as.double(sumw1xnT1), as.double(sumw1xnT1.sq),
-            as.double(sumw2xTx), as.double(sumw2xT1), as.double(sumw2xT1.sq),
-            as.double(sumw3xcTxc), as.double(sumw3xcT1), as.double(sumw3xcT1.sq),
-            as.double(sumw3xnTxn), as.double(sumw3xnT1), as.double(sumw3xnT1.sq)       )
+  res <- .Fortran("llkhfun", llkh=as.double(llkh), 
+            as.double(Xnna), as.double(Psi.m),
+            as.integer(memSubjects), as.double(eps),
+            as.integer(nrow(X)), as.integer(n),
+            as.integer(nc),
+            as.integer(nn)     )
 
-  llkh <- -res$llkh
+  llkh <- res$llkh
 
 
   memGenes2<-rep(1, nGenes)

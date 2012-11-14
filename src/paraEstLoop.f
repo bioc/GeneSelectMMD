@@ -228,7 +228,7 @@
 
       if(loop .ge. itmax) then
         call rwarn('***** Warning! ITMAX exceeded *****')
-        call rexit('EM algorithm did not converge!')
+        call rwarn('EM algorithm did not converge!')
       end if
 
       return

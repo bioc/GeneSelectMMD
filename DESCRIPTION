@@ -3,7 +3,7 @@ Type: Package
 Title: Gene selection based on the marginal distributions of gene
         profiles that characterized by a mixture of three-component
         multivariate distributions
-Version: 2.23.0
+Version: 2.24.0
 Date: 2012-11-14
 Author: Jarrett Morrow <remdj@channing.harvard.edu>, Weiliang Qiu
         <stwxq@channing.harvard.edu>, Wenqing He <whe@stats.uwo.ca>,

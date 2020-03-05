@@ -1,0 +1,8 @@
+v2.31.1
+  (1) update DESCRIPTION: maintainer's email address; exclude 'Biobase' and 'survival' from "Imports"
+  (2) update NAMESPACE: add "Import(Biobase)"
+  (3) fixed a bug in trans.R
+      the 'diff' in "tmp > 1 || diff < eps" is a vector
+  (4) revised visual.R: shorten strings in 'mytitle'
+  (5) change Weiliang's email address in all .Rd files
+  (6) revised plotHistDensity.Rd: shorten strings in 'mytitle'

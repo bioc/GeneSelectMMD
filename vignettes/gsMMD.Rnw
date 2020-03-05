@@ -102,7 +102,7 @@
         \email{remdj@channing.harvard.edu},
         \\
         Weilianq Qiu\\
-        \email{stwxq@channing.harvard.edu},
+        \email{Weiliang.Qiu@gmail.com},
         \\
         Wenqing He\\
         \email{whe@stats.uwo.ca},

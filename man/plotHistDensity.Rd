@@ -7,22 +7,22 @@ Plot of histogram of pooled gene expression levels, composited with density esti
 }
 \usage{
 plotHistDensity(obj.gsMMD,
-                plotFlag="case",
-                plotComponent=FALSE,
-                myxlab="expression level",
-                myylab="density",
-                mytitle="Histogram of gene expression levels\nimposed with estimated density (case)",
-                x.legend=NULL,
-                y.legend=NULL,
-                numPoints=500,
-                mycol=1:4, 
-                mylty=1:4, 
-                mylwd=rep(3,4), 
-                cex.main=2, 
-                cex.lab=1.5, 
-                cex.axis=1.5, 
-                cex=2,
-                bty="n")
+                plotFlag = "case",
+                plotComponent = FALSE,
+                myxlab = "expression level",
+                myylab = "density",
+                mytitle = "Histogram with estimated density (case)",
+                x.legend = NULL,
+                y.legend = NULL,
+                numPoints = 500,
+                mycol = 1:4, 
+                mylty = 1:4, 
+                mylwd = rep(3,4), 
+                cex.main = 2, 
+                cex.lab = 1.5, 
+                cex.axis = 1.5, 
+                cex = 2,
+                bty = "n")
 
 }
 %- maybe also 'usage' for other objects documented here.
@@ -59,8 +59,8 @@ expression levels for the overal distribution and the 3 component distributions.
 A list containing coordinates of the density estimates:
   \item{x }{sorted pooled gene expression levels for cases or controls.}
   \item{x2 }{a subset of \code{x} specified by the sequence:
-\code{seq(from=1,to=len.x, by=delta)}, where \code{len.x} is the
-length of the vector \code{x}, and \code{delta=floor(len.x/numpoints).}}
+\code{seq(from = 1,to = len.x, by = delta)}, where \code{len.x} is the
+length of the vector \code{x}, and \code{delta = floor(len.x/numpoints).}}
   \item{y }{density estimate corresponding to \code{x2}}
   \item{y1 }{weighted density estimate for gene cluster 1}
   \item{y2 }{weighted density estimate for gene cluster 2}
@@ -71,7 +71,7 @@ A Marginal Mixture Model for Selecting Differentially Expressed Genes across Two
 }
 \author{ 
 Jarrett Morrow \email{remdj@channing.harvard.edu},
-Weiliang Qiu \email{stwxq@channing.harvard.edu},
+Weiliang Qiu \email{Weiliang.Qiu@gmail.com},
 Wenqing He \email{whe@stats.uwo.ca},
 Xiaogang Wang \email{stevenw@mathstat.yorku.ca},
 Ross Lazarus \email{ross.lazarus@channing.harvard.edu}
@@ -84,23 +84,23 @@ subjects is zero. If the estimated marginal correlation obtained by \code{gsMMD}
   \dontrun{
     library(ALL)
     data(ALL)
-    eSet1 <- ALL[1:100, ALL$BT == "B3" | ALL$BT == "T2"]
+    eSet1 <- ALL[1:100, ALL$BT  ==  "B3" | ALL$BT  ==  "T2"]
     
     mem.str <- as.character(eSet1$BT)
     nSubjects <- length(mem.str)
     memSubjects <- rep(0,nSubjects)
     # B3 coded as 0 (control), T2 coded as 1 (case)
-    memSubjects[mem.str == "T2"] <- 1
+    memSubjects[mem.str  ==  "T2"] <- 1
     
-    obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag = TRUE, 
-      transformMethod = "boxcox", scaleFlag = TRUE, quiet = FALSE)
+    obj.gsMMD <- gsMMD(eSet1, memSubjects, transformFlag  =  TRUE, 
+      transformMethod  =  "boxcox", scaleFlag  =  TRUE, quiet  =  FALSE)
   
-    plotHistDensity(obj.gsMMD, plotFlag = "case", 
-        mytitle = "Histogram of gene expression levels for T2\nimposed with estimated density (case)", 
-        plotComponent = TRUE, 
-        x.legend = c(0.8, 3), 
-        y.legend = c(0.3, 0.4), 
-        numPoints = 500)
+    plotHistDensity(obj.gsMMD, plotFlag  =  "case", 
+        mytitle  =  "Histogram of gene expression levels for T2\nimposed with estimated density (case)", 
+        plotComponent  =  TRUE, 
+        x.legend  =  c(0.8, 3), 
+        y.legend  =  c(0.3, 0.4), 
+        numPoints  =  500)
   }
 
 }

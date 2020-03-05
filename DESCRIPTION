@@ -11,10 +11,10 @@ Author: Jarrett Morrow <remdj@channing.harvard.edu>, Weiliang Qiu
         <ross.lazarus@channing.harvard.edu>.
 Maintainer: Weiliang Qiu <weiliang.qiu@gmail.com>
 Depends: R (>= 2.13.2), Biobase
-Imports: Biobase, MASS, graphics, stats, survival, limma
+Imports: MASS, graphics, stats, limma
 Suggests: ALL
 Description: Gene selection based on a mixture of marginal
-        distributions
+        distributions.
 License: GPL (>= 2)
 Packaged: 2012-11-14 18:15:10 UTC; jarrett
 biocViews: DifferentialExpression

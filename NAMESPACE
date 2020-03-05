@@ -8,10 +8,9 @@ export(
   obtainResi
 )
 
-useDynLib(GeneSelectMMD)
+useDynLib(GeneSelectMMD, .registration = TRUE)
 
-importMethodsFrom(Biobase,
-                 exprs)
+import(Biobase)
 
 importFrom(MASS,
           ginv)
@@ -32,6 +31,8 @@ importFrom(stats,
           var,
           wilcox.test,
           model.matrix)
+
+importFrom("stats", "optimize")
 
 importFrom(limma,
           lmFit,

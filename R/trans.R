@@ -99,7 +99,7 @@ transBoxCox2<-function(x,
     criVec<-c(mycor, skewness, kurtosis)
     names(criVec)<-c("cor", "skewness", "kurtosis")
 
-    diff<-abs(best.criVec-criVec)
+    diff<-max(abs(best.criVec-criVec), na.rm=TRUE)
     tmp<-sum(best.criVec<criVec, na.rm=TRUE)
     if(tmp>1 || diff<eps)
     { 

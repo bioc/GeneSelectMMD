@@ -162,7 +162,7 @@ A Marginal Mixture Model for Selecting Differentially Expressed Genes across Two
 }
 \author{ 
 Jarrett Morrow \email{remdj@channing.harvard.edu},
-Weiliang Qiu \email{stwxq@channing.harvard.edu},
+Weiliang Qiu \email{Weiliang.Qiu@gmail.com},
 Wenqing He \email{whe@stats.uwo.ca},
 Xiaogang Wang \email{stevenw@mathstat.yorku.ca},
 Ross Lazarus \email{ross.lazarus@channing.harvard.edu}

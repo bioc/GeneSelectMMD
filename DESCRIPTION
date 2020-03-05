@@ -9,7 +9,7 @@ Author: Jarrett Morrow <remdj@channing.harvard.edu>, Weiliang Qiu
         <weiliang.qiu@gmail.com>, Wenqing He <whe@stats.uwo.ca>,
         Xiaogang Wang <stevenw@mathstat.yorku.ca>, Ross Lazarus
         <ross.lazarus@channing.harvard.edu>.
-Maintainer: Weiliang Qiu <stwxq@channing.harvard.edu>
+Maintainer: Weiliang Qiu <weiliang.qiu@gmail.com>
 Depends: R (>= 2.13.2), Biobase
 Imports: Biobase, MASS, graphics, stats, survival, limma
 Suggests: ALL
